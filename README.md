@@ -18,22 +18,23 @@ Requirements: macOS 13+ and the Codex desktop app.
 
 On first launch, allow **Codex Helper** in **System Settings → Privacy & Security → Accessibility**. Codex Helper needs its own permission because it is a separate app that focuses the Codex composer and submits the continuation message. If you used the earlier Codex Auto Retry prototype, this rename changes the app name, executable, bundle ID, and signing identity, so macOS treats Codex Helper as a new app and asks once more. Developer ID-signed updates with the same identity should not normally require permission again.
 
-## Menu bar and settings
+## Menu bar and dashboard
 
 Click the Codex Helper menu bar icon to:
 
 - turn Auto Retry on or off;
-- see Codex quota usage, reset time, and available reset count;
+- see the primary Codex quota percentage directly beside the menu bar icon;
+- see every quota window, reset time, and reset-credit count in the first-level menu;
 - choose Automatic, English, or Simplified Chinese;
 - enable or disable Launch at Login;
 - automatically check and download signed Codex Helper updates;
 - run a safe end-to-end Auto Retry test against a task you choose;
 - read the latest official Codex changelog and Codex-related OpenAI news;
 - open Codex documentation, troubleshooting, commands, and Tibo's X profile;
-- open Settings, Accessibility Settings, or logs;
+- open the dashboard, Accessibility Settings, or logs;
 - quit Codex Helper completely.
 
-You can also search for **Codex Helper** in Spotlight. Opening it again brings up the Settings window.
+You can also search for **Codex Helper** in Spotlight. Opening it again brings up the complete dashboard with quota progress, Auto Retry and permission status, app updates, official news, documentation, and general settings.
 
 ## Auto Retry
 
@@ -55,7 +56,7 @@ It does not modify Codex, proxy network traffic, read project files, or store co
 
 ## Usage
 
-The Usage submenu reads `account/rateLimits/read` from the official local Codex App Server. It shows each available quota window's consumed percentage and reset time, plus the number of reset credits when present. Codex Helper uses the authentication already managed by Codex and never reads tokens directly from `~/.codex/auth.json`.
+The menu bar percentage and first-level quota section read `account/rateLimits/read` from the official local Codex App Server. The dashboard adds native progress bars, reset times, reset credits, and the last refresh time. Codex Helper uses the authentication already managed by Codex and never reads tokens directly from `~/.codex/auth.json`. The menu bar percentage is enabled by default and can be hidden under General settings.
 
 ## Automatic updates
 

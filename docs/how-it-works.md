@@ -48,6 +48,8 @@ The What's New menu fetches the public Codex changelog RSS and OpenAI News RSS, 
 
 Codex Helper verifies the OpenAI signing team of the bundled `codex` executable, starts `codex app-server --stdio`, completes the JSON-RPC initialization handshake, and calls `account/rateLimits/read`. The long-lived local subprocess refreshes every five minutes. Because `account/rateLimits/updated` notifications are sparse, each notification triggers a full refetch instead of replacing the cached snapshot. Only quota percentages, window durations, reset timestamps, plan labels, and reset-credit counts are retained in memory; authentication remains inside Codex.
 
+The primary consumed percentage is shown beside the menu bar icon by default. Clicking once reveals every available quota window directly in the first-level menu. The main dashboard uses native progress bars and also shows reset credits, the last refresh time, Auto Retry and permission status, update state, official news, documentation, and general settings. Users can hide the persistent percentage without disabling quota refreshes.
+
 ## Signed updates
 
 The updater checks `makerjackie/codex-helper` GitHub Releases at most once per day when enabled. A newer release is downloaded only after its DMG matches the published SHA-256, Developer ID team, and Gatekeeper assessment. Before staging, the mounted app must pass a strict code-signing requirement for `com.makerjackie.codex-helper`, Team ID `PCJ84YD7HQ`, the release version, and Gatekeeper. Installation is user-triggered: a small detached updater waits for Codex Helper to exit, re-verifies both staged copies, replaces the app with a rollback backup, and reopens the verified version.

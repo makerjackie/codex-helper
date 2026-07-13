@@ -12,7 +12,7 @@ Requirements:
 ```bash
 SIGNING_IDENTITY="Developer ID Application: Company Name (TEAMID)" \
 NOTARY_PROFILE="your-notary-profile" \
-VERSION="0.3.0" \
+VERSION="0.4.0" \
 ./scripts/package-release.sh
 ```
 
@@ -21,9 +21,9 @@ The script verifies the app signature, submits and staples the app, builds and s
 Publish the resulting DMG and checksum:
 
 ```bash
-gh release create v0.3.0 \
-  dist/Codex-Helper-0.3.0.dmg \
-  dist/Codex-Helper-0.3.0.dmg.sha256 \
-  --title "Codex Helper v0.3.0" \
+gh release create v0.4.0 \
+  dist/Codex-Helper-0.4.0.dmg \
+  dist/Codex-Helper-0.4.0.dmg.sha256 \
+  --title "Codex Helper v0.4.0" \
   --generate-notes
 ```
