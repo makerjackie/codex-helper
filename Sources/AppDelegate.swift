@@ -419,24 +419,24 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     private func updateStatusItem() {
         guard let button = statusItem?.button else { return }
         let config = configStore.load()
-        let percent = primaryQuotaPercent
+        let remainingPercent = primaryRemainingPercent
         let staleMarker: String
         if case .unavailable = usageService.status, usageService.snapshot != nil {
             staleMarker = " ⚠︎"
         } else {
             staleMarker = ""
         }
-        button.title = config.showQuotaInMenuBar ? percent.map { "  \(formatPercent($0))\(staleMarker)" } ?? "" : ""
-        if let percent {
+        button.title = config.showQuotaInMenuBar ? remainingPercent.map { "  \(formatPercent($0))\(staleMarker)" } ?? "" : ""
+        if let remainingPercent {
             if staleMarker.isEmpty {
                 button.toolTip = text(
-                    "Codex quota: \(formatPercent(percent)) used",
-                    "Codex 额度：已使用 \(formatPercent(percent))"
+                    "Codex quota: \(formatPercent(remainingPercent)) left",
+                    "Codex 额度：剩余 \(formatPercent(remainingPercent))"
                 )
             } else {
                 button.toolTip = text(
-                    "Codex quota: \(formatPercent(percent)) used · refresh failed",
-                    "Codex 额度：已使用 \(formatPercent(percent)) · 刷新失败"
+                    "Codex quota: \(formatPercent(remainingPercent)) left · refresh failed",
+                    "Codex 额度：剩余 \(formatPercent(remainingPercent)) · 刷新失败"
                 )
             }
         } else {
@@ -466,7 +466,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
                     let suffix = reset.map { text(" · resets \($0)", " · 重置于 \($0)") } ?? ""
                     menu.addItem(disabledMenuItem(
                         "\(limit.name) · \(duration) · "
-                            + text("\(formatPercent(window.usedPercent)) used", "已使用 \(formatPercent(window.usedPercent))")
+                            + text("\(formatPercent(window.remainingPercent)) left", "剩余 \(formatPercent(window.remainingPercent))")
                             + suffix
                     ))
                 }
@@ -496,9 +496,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         return item
     }
 
-    private var primaryQuotaPercent: Double? {
-        usageService.snapshot?.limits.first(where: { $0.id == "codex" })?.primary?.usedPercent
-            ?? usageService.snapshot?.limits.first?.primary?.usedPercent
+    private var primaryRemainingPercent: Double? {
+        let window = usageService.snapshot?.limits.first(where: { $0.id == "codex" })?.primary
+            ?? usageService.snapshot?.limits.first?.primary
+        return window?.remainingPercent
     }
 
     private func makeDashboardModel() -> DashboardModel {
@@ -592,8 +593,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
                 } ?? text("\(duration) window", "\(duration) 周期")
                 return DashboardUsageRow(
                     name: limit.name,
-                    percentText: text("\(formatPercent(window.usedPercent)) used", "已使用 \(formatPercent(window.usedPercent))"),
-                    usedPercent: window.usedPercent,
+                    percentText: text("\(formatPercent(window.remainingPercent)) left", "剩余 \(formatPercent(window.remainingPercent))"),
+                    remainingPercent: window.remainingPercent,
                     detail: detail
                 )
             }

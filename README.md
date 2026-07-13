@@ -23,7 +23,7 @@ On first launch, allow **Codex Helper** in **System Settings → Privacy & Secur
 Click the Codex Helper menu bar icon to:
 
 - turn Auto Retry on or off;
-- see the primary Codex quota percentage directly beside the menu bar icon;
+- see the primary Codex remaining quota percentage directly beside the menu bar icon;
 - see every quota window, reset time, and reset-credit count in the first-level menu;
 - choose Automatic, English, or Simplified Chinese;
 - enable or disable Launch at Login;
@@ -56,7 +56,7 @@ It does not modify Codex, proxy network traffic, read project files, or store co
 
 ## Usage
 
-The menu bar percentage and first-level quota section read `account/rateLimits/read` from the official local Codex App Server. The dashboard adds native progress bars, reset times, reset credits, and the last refresh time. Codex Helper uses the authentication already managed by Codex and never reads tokens directly from `~/.codex/auth.json`. The menu bar percentage is enabled by default and can be hidden under General settings.
+The menu bar percentage and first-level quota section read `account/rateLimits/read` from the official local Codex App Server. The API reports `usedPercent`; Codex Helper displays the remaining quota as `100 - usedPercent`, matching the direction used by Codex itself. The dashboard adds native progress bars, reset times, reset credits, and the last refresh time. Codex Helper uses the authentication already managed by Codex and never reads tokens directly from `~/.codex/auth.json`. The menu bar percentage is enabled by default and can be hidden under General settings.
 
 ## Automatic updates
 
