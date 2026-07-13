@@ -1,5 +1,6 @@
 {
   "autoRetryEnabled": true,
+  "automaticUpdates": true,
   "language": "auto",
   "launchAtLogin": true
 }

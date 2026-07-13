@@ -44,9 +44,17 @@ English and Simplified Chinese prompts are built in. `config.json` can use `auto
 
 The What's New menu fetches the public Codex changelog RSS and OpenAI News RSS, filtering the broader feed for Codex. Each successfully parsed source is merged independently into the cache under Codex Helper's Application Support directory. Successful feeds refresh every six hours; failed requests back off for at least 15 minutes. Documentation and Tibo entries are plain external links; no X timeline is scraped.
 
+## Usage limits
+
+Codex Helper verifies the OpenAI signing team of the bundled `codex` executable, starts `codex app-server --stdio`, completes the JSON-RPC initialization handshake, and calls `account/rateLimits/read`. The long-lived local subprocess refreshes every five minutes. Because `account/rateLimits/updated` notifications are sparse, each notification triggers a full refetch instead of replacing the cached snapshot. Only quota percentages, window durations, reset timestamps, plan labels, and reset-credit counts are retained in memory; authentication remains inside Codex.
+
+## Signed updates
+
+The updater checks `makerjackie/codex-helper` GitHub Releases at most once per day when enabled. A newer release is downloaded only after its DMG matches the published SHA-256, Developer ID team, and Gatekeeper assessment. Before staging, the mounted app must pass a strict code-signing requirement for `com.makerjackie.codex-helper`, Team ID `PCJ84YD7HQ`, the release version, and Gatekeeper. Installation is user-triggered: a small detached updater waits for Codex Helper to exit, re-verifies both staged copies, replaces the app with a rollback backup, and reopens the verified version.
+
 ## Privacy and security
 
-- No backend service or telemetry. The What's New menu makes direct HTTPS requests only to official OpenAI public RSS feeds.
+- No backend service or telemetry. Network requests go directly to official OpenAI feeds and the project's GitHub Releases API.
 - No project files are read.
 - No conversation content is retained.
 - Persistent state contains log cursor offsets, task IDs, timestamps, and retry counters.
