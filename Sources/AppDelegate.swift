@@ -11,12 +11,14 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     private let usageService = CodexUsageService()
     private lazy var updater = UpdateService(supportURL: configStore.supportURL)
     private var statusItem: NSStatusItem!
-    private lazy var dashboard = DashboardController(actions: DashboardActions(
+    private lazy var dashboardActions = DashboardActions(
         target: self,
+        showDashboard: #selector(showDashboard(_:)),
         openAccessibility: #selector(openAccessibilitySettings(_:)),
         toggleAutoRetry: #selector(settingsAutoRetryChanged(_:)),
         testAutoRetry: #selector(testAutoRetry(_:)),
         refreshUsage: #selector(refreshUsage(_:)),
+        toggleQuotaWidget: #selector(toggleQuotaWidget(_:)),
         performUpdate: #selector(performUpdateAction(_:)),
         toggleAutomaticUpdates: #selector(settingsAutomaticUpdatesChanged(_:)),
         refreshNews: #selector(refreshUpdates(_:)),
@@ -26,7 +28,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         changeLanguage: #selector(settingsLanguageChanged(_:)),
         openLoginItems: #selector(openLoginItemsSettings(_:)),
         openLogs: #selector(openLogFolder(_:))
-    ))
+    )
+    private lazy var dashboard = DashboardController(actions: dashboardActions)
+    private lazy var quotaWidget = QuotaWidgetController(actions: dashboardActions)
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         NSApp.setActivationPolicy(.accessory)
@@ -79,13 +83,17 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     private func refreshInterface() {
         updateStatusItem()
         rebuildMenu()
-        dashboard.update(model: makeDashboardModel())
+        let model = makeDashboardModel()
+        dashboard.update(model: model)
+        syncQuotaWidget(model: model)
     }
 
     private func refreshUsageInterface() {
         updateStatusItem()
         rebuildMenu()
-        dashboard.updateUsage(model: makeDashboardModel())
+        let model = makeDashboardModel()
+        dashboard.updateUsage(model: model)
+        syncQuotaWidget(model: model)
     }
 
     private func refreshUpdaterInterface() {
@@ -126,6 +134,14 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         menu.addItem(status)
         menu.addItem(.separator())
         addUsageItems(to: menu)
+        let widgetItem = NSMenuItem(
+            title: text("Desktop Quota Widget", "桌面额度小组件"),
+            action: #selector(toggleQuotaWidget(_:)),
+            keyEquivalent: ""
+        )
+        widgetItem.target = self
+        widgetItem.state = config.showQuotaWidget ? .on : .off
+        menu.addItem(widgetItem)
         menu.addItem(.separator())
 
         let retryItem = NSMenuItem(title: text("Auto Retry", "自动重试"), action: #selector(toggleAutoRetry(_:)), keyEquivalent: "")
@@ -216,6 +232,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
 
     @objc func showDashboard(_ sender: Any?) {
         dashboard.show(model: makeDashboardModel())
+    }
+
+    @objc private func toggleQuotaWidget(_ sender: Any?) {
+        var config = configStore.load()
+        config.showQuotaWidget.toggle()
+        configStore.save(config)
+        refreshInterface()
     }
 
     @objc private func openAccessibilitySettings(_ sender: Any?) {
@@ -426,17 +449,17 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         } else {
             staleMarker = ""
         }
-        button.title = config.showQuotaInMenuBar ? remainingPercent.map { "  \(formatPercent($0))\(staleMarker)" } ?? "" : ""
+        button.title = config.showQuotaInMenuBar ? remainingPercent.map { "  \(formatQuotaPercent($0))\(staleMarker)" } ?? "" : ""
         if let remainingPercent {
             if staleMarker.isEmpty {
                 button.toolTip = text(
-                    "Codex quota: \(formatPercent(remainingPercent)) left",
-                    "Codex 额度：剩余 \(formatPercent(remainingPercent))"
+                    "Codex quota: \(formatQuotaPercent(remainingPercent)) left",
+                    "Codex 额度：剩余 \(formatQuotaPercent(remainingPercent))"
                 )
             } else {
                 button.toolTip = text(
-                    "Codex quota: \(formatPercent(remainingPercent)) left · refresh failed",
-                    "Codex 额度：剩余 \(formatPercent(remainingPercent)) · 刷新失败"
+                    "Codex quota: \(formatQuotaPercent(remainingPercent)) left · refresh failed",
+                    "Codex 额度：剩余 \(formatQuotaPercent(remainingPercent)) · 刷新失败"
                 )
             }
         } else {
@@ -466,7 +489,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
                     let suffix = reset.map { text(" · resets \($0)", " · 重置于 \($0)") } ?? ""
                     menu.addItem(disabledMenuItem(
                         "\(limit.name) · \(duration) · "
-                            + text("\(formatPercent(window.remainingPercent)) left", "剩余 \(formatPercent(window.remainingPercent))")
+                            + text("\(formatQuotaPercent(window.remainingPercent)) left", "剩余 \(formatQuotaPercent(window.remainingPercent))")
                             + suffix
                     ))
                 }
@@ -500,6 +523,14 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         let window = usageService.snapshot?.limits.first(where: { $0.id == "codex" })?.primary
             ?? usageService.snapshot?.limits.first?.primary
         return window?.remainingPercent
+    }
+
+    private func syncQuotaWidget(model: DashboardModel) {
+        if model.showQuotaWidget {
+            quotaWidget.show(model: model)
+        } else {
+            quotaWidget.hide()
+        }
     }
 
     private func makeDashboardModel() -> DashboardModel {
@@ -578,6 +609,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
             latestUpdates: links,
             launchAtLogin: loginItemEnabled,
             showQuotaInMenuBar: config.showQuotaInMenuBar,
+            showQuotaWidget: config.showQuotaWidget,
             languageIndex: languageValues.firstIndex(of: config.language) ?? 0
         )
     }
@@ -589,11 +621,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
                 guard let window else { return nil }
                 let duration = window.windowDurationMins.map(usageWindowLabel) ?? text("Current window", "当前周期")
                 let detail = window.resetsAt.map {
-                    text("\(duration) window · Resets \(formatResetDate($0))", "\(duration) 周期 · 重置于 \(formatResetDate($0))")
+                    text("\(duration) window · Resets in \(formatResetDistance($0))", "\(duration) 周期 · \(formatResetDistance($0))后重置")
                 } ?? text("\(duration) window", "\(duration) 周期")
                 return DashboardUsageRow(
                     name: limit.name,
-                    percentText: text("\(formatPercent(window.remainingPercent)) left", "剩余 \(formatPercent(window.remainingPercent))"),
+                    planText: limit.planType?.capitalized,
+                    percentText: text("\(formatQuotaPercent(window.remainingPercent)) left", "剩余 \(formatQuotaPercent(window.remainingPercent))"),
                     remainingPercent: window.remainingPercent,
                     detail: detail
                 )
@@ -651,10 +684,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         return item
     }
 
-    private func formatPercent(_ value: Double) -> String {
-        value.rounded() == value ? "\(Int(value))%" : String(format: "%.1f%%", value)
-    }
-
     private func usageWindowLabel(_ minutes: Int) -> String {
         if minutes % (24 * 60) == 0 { return "\(minutes / (24 * 60))d" }
         if minutes % 60 == 0 { return "\(minutes / 60)h" }
@@ -667,6 +696,21 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         formatter.dateStyle = .short
         formatter.timeStyle = .short
         return formatter.string(from: date)
+    }
+
+    private func formatResetDistance(_ date: Date) -> String {
+        let totalMinutes = max(Int(ceil(date.timeIntervalSinceNow / 60)), 0)
+        let days = totalMinutes / (24 * 60)
+        let hours = (totalMinutes % (24 * 60)) / 60
+        let minutes = totalMinutes % 60
+        if configStore.isChinese() {
+            if days > 0 { return hours > 0 ? "\(days)天\(hours)小时" : "\(days)天" }
+            if hours > 0 { return minutes > 0 ? "\(hours)小时\(minutes)分钟" : "\(hours)小时" }
+            return "\(minutes)分钟"
+        }
+        if days > 0 { return hours > 0 ? "\(days)d \(hours)h" : "\(days)d" }
+        if hours > 0 { return minutes > 0 ? "\(hours)h \(minutes)m" : "\(hours)h" }
+        return "\(minutes)m"
     }
 
     private func makeWhatsNewMenu() -> NSMenuItem {

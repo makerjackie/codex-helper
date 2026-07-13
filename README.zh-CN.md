@@ -6,7 +6,7 @@
   <img src="assets/app-icon-source.png" width="180" alt="Codex Helper 图标">
 </p>
 
-一个非官方、开源的 Codex macOS 菜单栏辅助工具：安全自动重试、额度查看、官方动态与文档，以及经过签名校验的应用内更新。
+一个非官方、开源的 Codex macOS 辅助工具：会随剩余额度变色的桌面小组件、安全自动重试、官方动态与文档，以及经过签名校验的应用内更新。
 
 > 本项目与 OpenAI 无隶属或背书关系。
 
@@ -24,6 +24,7 @@
 
 - 开启或关闭“自动重试”；
 - 直接在菜单栏图标旁看到主要 Codex 剩余额度百分比；
+- 显示或隐藏始终置顶的桌面额度小组件，并查看重置倒计时；
 - 在一级菜单中查看全部额度周期、重置时间和可用重置次数；
 - 选择自动、English 或简体中文；
 - 开启或关闭登录时启动；
@@ -34,7 +35,11 @@
 - 打开主页面、辅助功能设置或日志；
 - 完全退出 Codex Helper。
 
-也可以使用 Spotlight 搜索 **Codex Helper**。App 已经运行时再次打开，会直接显示完整主页面，其中包含额度进度、自动重试和权限状态、应用更新、官方动态、文档及常规设置。
+也可以使用 Spotlight 搜索 **Codex Helper**。App 已经运行时再次打开，会直接显示重新设计的完整主页面：额度成为第一视觉重点，不再只是纵向堆叠设置卡片，同时仍保留自动重试、应用更新、官方动态、文档和常规设置。
+
+<p align="center">
+  <img src="assets/quota-widget-v0.5.0.jpg" width="340" alt="Codex Helper 桌面额度小组件">
+</p>
 
 ## 自动重试功能
 
@@ -56,7 +61,7 @@ Codex Helper 会：
 
 ## 额度使用情况
 
-菜单栏百分比和一级额度区域通过官方本地 Codex App Server 的 `account/rateLimits/read` 读取数据。接口返回的是 `usedPercent`；Codex Helper 会计算 `100 - usedPercent`，统一显示为“剩余”，与 Codex 官方界面的表达方向一致。主页面进一步显示原生进度条、重置时间、可用重置次数和最后刷新时间。Codex Helper 复用 Codex 自己管理的登录状态，不会直接读取 `~/.codex/auth.json` 中的令牌。菜单栏额度默认显示，也可以在“常规设置”中关闭。
+菜单栏、主页面和桌面小组件都通过官方本地 Codex App Server 的 `account/rateLimits/read` 读取数据。接口返回的是 `usedPercent`；Codex Helper 会计算 `100 - usedPercent`，统一显示为“剩余”，与 Codex 官方界面的表达方向一致。额度在 50–100% 时使用蓝绿色，10–50% 时变为琥珀色，低于 10% 时变为珊瑚红。小组件还会显示重置倒计时、可用重置次数，并提供刷新、打开主页面和隐藏操作。Codex Helper 复用 Codex 自己管理的登录状态，不会直接读取 `~/.codex/auth.json` 中的令牌。
 
 ## 自动更新
 
