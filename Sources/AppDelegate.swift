@@ -11,12 +11,22 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     private let usageService = CodexUsageService()
     private lazy var updater = UpdateService(supportURL: configStore.supportURL)
     private var statusItem: NSStatusItem!
-    private var settingsWindow: NSWindow?
-    private weak var autoRetryCheckbox: NSButton?
-    private weak var launchCheckbox: NSButton?
-    private weak var automaticUpdatesCheckbox: NSButton?
-    private weak var languagePopup: NSPopUpButton?
-    private weak var accessibilityLabel: NSTextField?
+    private lazy var dashboard = DashboardController(actions: DashboardActions(
+        target: self,
+        openAccessibility: #selector(openAccessibilitySettings(_:)),
+        toggleAutoRetry: #selector(settingsAutoRetryChanged(_:)),
+        testAutoRetry: #selector(testAutoRetry(_:)),
+        refreshUsage: #selector(refreshUsage(_:)),
+        performUpdate: #selector(performUpdateAction(_:)),
+        toggleAutomaticUpdates: #selector(settingsAutomaticUpdatesChanged(_:)),
+        refreshNews: #selector(refreshUpdates(_:)),
+        openLink: #selector(openDashboardLink(_:)),
+        toggleLaunchAtLogin: #selector(settingsLaunchChanged(_:)),
+        toggleMenuBarQuota: #selector(settingsShowQuotaChanged(_:)),
+        changeLanguage: #selector(settingsLanguageChanged(_:)),
+        openLoginItems: #selector(openLoginItemsSettings(_:)),
+        openLogs: #selector(openLogFolder(_:))
+    ))
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         NSApp.setActivationPolicy(.accessory)
@@ -25,12 +35,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         if configStore.load().autoRetryEnabled {
             agent.start()
         }
-        usageService.onChange = { [weak self] in self?.rebuildMenu() }
+        usageService.onChange = { [weak self] in self?.refreshUsageInterface() }
         usageService.start()
-        updater.onChange = { [weak self] in self?.rebuildMenu() }
+        updater.onChange = { [weak self] in self?.refreshUpdaterInterface() }
         updater.start(automaticDownload: configStore.load().automaticUpdates)
         updatesService.refreshIfNeeded { [weak self] in
-            self?.rebuildMenu()
+            self?.refreshNewsInterface()
         }
     }
 
@@ -40,25 +50,52 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         updater.stop()
     }
 
+    func applicationDidBecomeActive(_ notification: Notification) {
+        guard statusItem != nil else { return }
+        refreshInterface()
+    }
+
     func applicationShouldHandleReopen(_ sender: NSApplication, hasVisibleWindows flag: Bool) -> Bool {
-        showSettings(nil)
+        showDashboard(nil)
         return true
     }
 
     func menuWillOpen(_ menu: NSMenu) {
         populateMenu(menu)
         updatesService.refreshIfNeeded { [weak self] in
-            self?.rebuildMenu()
+            self?.refreshNewsInterface()
         }
     }
 
     private func configureStatusItem() {
-        statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.squareLength)
+        statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
         if let button = statusItem.button {
             button.image = NSImage(systemSymbolName: "arrow.triangle.2.circlepath.circle.fill", accessibilityDescription: "Codex Helper")
-            button.toolTip = "Codex Helper"
+            button.imagePosition = .imageLeading
         }
+        refreshInterface()
+    }
+
+    private func refreshInterface() {
+        updateStatusItem()
         rebuildMenu()
+        dashboard.update(model: makeDashboardModel())
+    }
+
+    private func refreshUsageInterface() {
+        updateStatusItem()
+        rebuildMenu()
+        dashboard.updateUsage(model: makeDashboardModel())
+    }
+
+    private func refreshUpdaterInterface() {
+        rebuildMenu()
+        dashboard.updateAppUpdates(model: makeDashboardModel())
+    }
+
+    private func refreshNewsInterface() {
+        rebuildMenu()
+        dashboard.updateNews(model: makeDashboardModel())
     }
 
     private func rebuildMenu() {
@@ -87,7 +124,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         let status = NSMenuItem(title: statusTitle, action: nil, keyEquivalent: "")
         status.isEnabled = false
         menu.addItem(status)
-        menu.addItem(makeUsageMenu())
+        menu.addItem(.separator())
+        addUsageItems(to: menu)
         menu.addItem(.separator())
 
         let retryItem = NSMenuItem(title: text("Auto Retry", "自动重试"), action: #selector(toggleAutoRetry(_:)), keyEquivalent: "")
@@ -123,9 +161,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
 
         menu.addItem(makeUpdateMenuItem())
 
-        let settings = NSMenuItem(title: text("Settings…", "设置…"), action: #selector(showSettings(_:)), keyEquivalent: ",")
-        settings.target = self
-        menu.addItem(settings)
+        let dashboard = NSMenuItem(title: text("Open Codex Helper…", "打开 Codex Helper…"), action: #selector(showDashboard(_:)), keyEquivalent: ",")
+        dashboard.target = self
+        menu.addItem(dashboard)
 
         if !agent.accessibilityGranted {
             let permission = NSMenuItem(title: text("Open Accessibility Settings…", "打开辅助功能设置…"), action: #selector(openAccessibilitySettings(_:)), keyEquivalent: "")
@@ -148,8 +186,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         config.autoRetryEnabled.toggle()
         configStore.save(config)
         config.autoRetryEnabled ? agent.start() : agent.stop()
-        rebuildMenu()
-        refreshSettingsControls()
+        refreshInterface()
     }
 
     @objc private func selectLanguage(_ sender: NSMenuItem) {
@@ -157,15 +194,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         var config = configStore.load()
         config.language = language
         configStore.save(config)
-        let settingsWereVisible = settingsWindow?.isVisible == true
-        if settingsWereVisible {
-            settingsWindow?.close()
-            settingsWindow = nil
-        }
-        rebuildMenu()
-        if settingsWereVisible {
-            showSettings(nil)
-        }
+        refreshInterface()
     }
 
     @objc private func toggleLaunchAtLogin(_ sender: Any?) {
@@ -182,18 +211,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         } catch {
             showError(error.localizedDescription)
         }
-        rebuildMenu()
-        refreshSettingsControls()
+        refreshInterface()
     }
 
-    @objc func showSettings(_ sender: Any?) {
-        if settingsWindow == nil {
-            settingsWindow = makeSettingsWindow()
-        }
-        refreshSettingsControls()
-        settingsWindow?.center()
-        settingsWindow?.makeKeyAndOrderFront(nil)
-        NSApp.activate(ignoringOtherApps: true)
+    @objc func showDashboard(_ sender: Any?) {
+        dashboard.show(model: makeDashboardModel())
     }
 
     @objc private func openAccessibilitySettings(_ sender: Any?) {
@@ -218,9 +240,14 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         NSWorkspace.shared.open(url)
     }
 
+    @objc private func openDashboardLink(_ sender: NSButton) {
+        guard let value = sender.identifier?.rawValue, let url = URL(string: value) else { return }
+        NSWorkspace.shared.open(url)
+    }
+
     @objc private func refreshUpdates(_ sender: Any?) {
         updatesService.refreshIfNeeded(force: true) { [weak self] in
-            self?.rebuildMenu()
+            self?.refreshNewsInterface()
         }
     }
 
@@ -312,8 +339,14 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         configStore.save(config)
         updater.setAutomaticDownload(config.automaticUpdates)
         if config.automaticUpdates { updater.check(automaticDownload: true) }
-        rebuildMenu()
-        refreshSettingsControls()
+        refreshInterface()
+    }
+
+    @objc private func settingsShowQuotaChanged(_ sender: NSButton) {
+        var config = configStore.load()
+        config.showQuotaInMenuBar = sender.state == .on
+        configStore.save(config)
+        refreshInterface()
     }
 
     @objc private func settingsLanguageChanged(_ sender: NSPopUpButton) {
@@ -322,109 +355,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         var config = configStore.load()
         config.language = values[sender.indexOfSelectedItem]
         configStore.save(config)
-        settingsWindow?.close()
-        settingsWindow = nil
-        rebuildMenu()
-        showSettings(nil)
-    }
-
-    private func makeSettingsWindow() -> NSWindow {
-        let window = NSWindow(
-            contentRect: NSRect(x: 0, y: 0, width: 480, height: 370),
-            styleMask: [.titled, .closable],
-            backing: .buffered,
-            defer: false
-        )
-        window.title = text("Codex Helper Settings", "Codex Helper 设置")
-        window.isReleasedWhenClosed = false
-
-        let content = NSView()
-        content.translatesAutoresizingMaskIntoConstraints = false
-        window.contentView = content
-
-        let title = NSTextField(labelWithString: "Codex Helper")
-        title.font = .systemFont(ofSize: 24, weight: .bold)
-
-        let retry = NSButton(checkboxWithTitle: text("Enable Auto Retry", "启用自动重试"), target: self, action: #selector(settingsAutoRetryChanged(_:)))
-        autoRetryCheckbox = retry
-
-        let launch = NSButton(checkboxWithTitle: text("Launch Codex Helper at login", "登录时启动 Codex Helper"), target: self, action: #selector(settingsLaunchChanged(_:)))
-        launchCheckbox = launch
-
-        let automaticUpdates = NSButton(
-            checkboxWithTitle: text("Automatically check and download updates", "自动检查并下载更新"),
-            target: self,
-            action: #selector(settingsAutomaticUpdatesChanged(_:))
-        )
-        automaticUpdatesCheckbox = automaticUpdates
-
-        let popup = NSPopUpButton()
-        popup.addItems(withTitles: [text("Automatic", "自动"), "English", "简体中文"])
-        popup.target = self
-        popup.action = #selector(settingsLanguageChanged(_:))
-        languagePopup = popup
-        let languageRow = row(label: text("Continuation language", "续跑消息语言"), control: popup)
-
-        let permission = NSTextField(labelWithString: "")
-        permission.textColor = .secondaryLabelColor
-        accessibilityLabel = permission
-        let permissionButton = NSButton(title: text("Accessibility Settings…", "辅助功能设置…"), target: self, action: #selector(openAccessibilitySettings(_:)))
-        permissionButton.bezelStyle = .rounded
-        let permissionRow = row(label: permission.stringValue, control: permissionButton)
-        if let label = permissionRow.arrangedSubviews.first as? NSTextField {
-            accessibilityLabel = label
-        }
-
-        let loginButton = NSButton(title: text("Login Items Settings…", "登录项设置…"), target: self, action: #selector(openLoginItemsSettings(_:)))
-        loginButton.bezelStyle = .rounded
-        let logButton = NSButton(title: text("Open Log Folder", "打开日志文件夹"), target: self, action: #selector(openLogFolder(_:)))
-        logButton.bezelStyle = .rounded
-        let updateButton = NSButton(title: text("Check for Updates…", "检查更新…"), target: self, action: #selector(performUpdateAction(_:)))
-        updateButton.bezelStyle = .rounded
-        let buttons = NSStackView(views: [loginButton, logButton, updateButton])
-        buttons.orientation = .horizontal
-        buttons.spacing = 8
-
-        let stack = NSStackView(views: [title, retry, launch, automaticUpdates, languageRow, permissionRow, buttons])
-        stack.orientation = .vertical
-        stack.alignment = .leading
-        stack.spacing = 14
-        stack.translatesAutoresizingMaskIntoConstraints = false
-        content.addSubview(stack)
-
-        NSLayoutConstraint.activate([
-            stack.leadingAnchor.constraint(equalTo: content.leadingAnchor, constant: 28),
-            stack.trailingAnchor.constraint(equalTo: content.trailingAnchor, constant: -28),
-            stack.topAnchor.constraint(equalTo: content.topAnchor, constant: 28),
-            stack.bottomAnchor.constraint(lessThanOrEqualTo: content.bottomAnchor, constant: -28),
-            languageRow.widthAnchor.constraint(equalTo: stack.widthAnchor),
-            permissionRow.widthAnchor.constraint(equalTo: stack.widthAnchor)
-        ])
-        return window
-    }
-
-    private func row(label: String, control: NSView) -> NSStackView {
-        let labelView = NSTextField(labelWithString: label)
-        labelView.setContentHuggingPriority(.defaultLow, for: .horizontal)
-        let spacer = NSView()
-        spacer.setContentHuggingPriority(.defaultLow, for: .horizontal)
-        let stack = NSStackView(views: [labelView, spacer, control])
-        stack.orientation = .horizontal
-        stack.alignment = .centerY
-        stack.spacing = 8
-        return stack
-    }
-
-    private func refreshSettingsControls() {
-        let config = configStore.load()
-        autoRetryCheckbox?.state = config.autoRetryEnabled ? .on : .off
-        launchCheckbox?.state = loginItemEnabled ? .on : .off
-        automaticUpdatesCheckbox?.state = config.automaticUpdates ? .on : .off
-        let values = ["auto", "en", "zh"]
-        languagePopup?.selectItem(at: values.firstIndex(of: config.language) ?? 0)
-        accessibilityLabel?.stringValue = agent.accessibilityGranted
-            ? text("Accessibility: Allowed", "辅助功能：已允许")
-            : text("Accessibility: Permission required", "辅助功能：需要授权")
+        refreshInterface()
     }
 
     private var loginItemEnabled: Bool {
@@ -485,102 +416,237 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         alert.runModal()
     }
 
-    private func makeUsageMenu() -> NSMenuItem {
-        let parentTitle: String
-        switch usageService.status {
-        case let .available(snapshot):
-            let used = snapshot.limits.first(where: { $0.id == "codex" })?.primary?.usedPercent
-            parentTitle = used.map {
-                text("Codex Quota: \(formatPercent($0)) used", "Codex 额度：已使用 \(formatPercent($0))")
-            } ?? text("Codex Quota", "Codex 额度")
-        case .loading:
-            parentTitle = text("Codex Quota: Refreshing…", "Codex 额度：正在刷新…")
-        case .unavailable:
-            parentTitle = text("Codex Quota: Unavailable", "Codex 额度：暂不可用")
-        case .idle:
-            parentTitle = text("Codex Quota", "Codex 额度")
+    private func updateStatusItem() {
+        guard let button = statusItem?.button else { return }
+        let config = configStore.load()
+        let percent = primaryQuotaPercent
+        let staleMarker: String
+        if case .unavailable = usageService.status, usageService.snapshot != nil {
+            staleMarker = " ⚠︎"
+        } else {
+            staleMarker = ""
         }
+        button.title = config.showQuotaInMenuBar ? percent.map { "  \(formatPercent($0))\(staleMarker)" } ?? "" : ""
+        if let percent {
+            if staleMarker.isEmpty {
+                button.toolTip = text(
+                    "Codex quota: \(formatPercent(percent)) used",
+                    "Codex 额度：已使用 \(formatPercent(percent))"
+                )
+            } else {
+                button.toolTip = text(
+                    "Codex quota: \(formatPercent(percent)) used · refresh failed",
+                    "Codex 额度：已使用 \(formatPercent(percent)) · 刷新失败"
+                )
+            }
+        } else {
+            button.toolTip = text("Codex Helper · quota unavailable", "Codex Helper · 额度暂不可用")
+        }
+    }
 
-        let parent = NSMenuItem(title: parentTitle, action: nil, keyEquivalent: "")
-        let submenu = NSMenu()
+    private func addUsageItems(to menu: NSMenu) {
+        let headingTitle: String
         switch usageService.status {
-        case let .available(snapshot):
+        case .loading:
+            headingTitle = text("Codex Quota · Refreshing…", "Codex 额度 · 正在刷新…")
+        case .unavailable:
+            headingTitle = usageService.snapshot == nil
+                ? text("Codex Quota · Unavailable", "Codex 额度 · 暂不可用")
+                : text("Codex Quota · Refresh failed", "Codex 额度 · 刷新失败")
+        default:
+            headingTitle = text("Codex Quota", "Codex 额度")
+        }
+        menu.addItem(disabledMenuItem(headingTitle))
+
+        if let snapshot = usageService.snapshot {
             for limit in snapshot.limits {
-                let heading = NSMenuItem(title: limit.name, action: nil, keyEquivalent: "")
-                heading.isEnabled = false
-                submenu.addItem(heading)
                 for window in [limit.primary, limit.secondary].compactMap({ $0 }) {
-                    let duration = window.windowDurationMins.map(usageWindowLabel) ?? text("Current window", "当前周期")
+                    let duration = window.windowDurationMins.map(usageWindowLabel) ?? text("current window", "当前周期")
                     let reset = window.resetsAt.map(formatResetDate)
-                    let item = NSMenuItem(
-                        title: "  \(duration): \(formatPercent(window.usedPercent)) "
-                            + (reset.map { text("used · resets \($0)", "已使用 · 重置于 \($0)") }
-                                ?? text("used", "已使用")),
-                        action: nil,
-                        keyEquivalent: ""
-                    )
-                    item.isEnabled = false
-                    submenu.addItem(item)
+                    let suffix = reset.map { text(" · resets \($0)", " · 重置于 \($0)") } ?? ""
+                    menu.addItem(disabledMenuItem(
+                        "\(limit.name) · \(duration) · "
+                            + text("\(formatPercent(window.usedPercent)) used", "已使用 \(formatPercent(window.usedPercent))")
+                            + suffix
+                    ))
                 }
             }
-            if snapshot.resetCredits > 0 {
-                submenu.addItem(.separator())
-                let credits = NSMenuItem(
-                    title: text("\(snapshot.resetCredits) reset available", "可用重置次数：\(snapshot.resetCredits)"),
-                    action: nil,
-                    keyEquivalent: ""
-                )
-                credits.isEnabled = false
-                submenu.addItem(credits)
-            }
-        case let .unavailable(message):
-            let item = NSMenuItem(title: message, action: nil, keyEquivalent: "")
-            item.isEnabled = false
-            submenu.addItem(item)
-        case .loading:
-            let item = NSMenuItem(title: text("Reading Codex account limits…", "正在读取 Codex 账户额度…"), action: nil, keyEquivalent: "")
-            item.isEnabled = false
-            submenu.addItem(item)
-        case .idle:
-            break
+            menu.addItem(disabledMenuItem(text(
+                "Reset credits: \(snapshot.resetCredits)",
+                "可用重置次数：\(snapshot.resetCredits)"
+            )))
+            menu.addItem(disabledMenuItem(text(
+                "Updated \(formatResetDate(snapshot.fetchedAt))",
+                "更新于 \(formatResetDate(snapshot.fetchedAt))"
+            )))
+        } else if case let .unavailable(message) = usageService.status {
+            menu.addItem(disabledMenuItem(localizedUsageError(message)))
+        } else {
+            menu.addItem(disabledMenuItem(text("Reading account limits…", "正在读取账户额度…")))
         }
-        submenu.addItem(.separator())
+
         let refresh = NSMenuItem(title: text("Refresh Codex Quota", "刷新 Codex 额度"), action: #selector(refreshUsage(_:)), keyEquivalent: "")
         refresh.target = self
-        submenu.addItem(refresh)
-        parent.submenu = submenu
-        return parent
+        menu.addItem(refresh)
+    }
+
+    private func disabledMenuItem(_ title: String) -> NSMenuItem {
+        let item = NSMenuItem(title: title, action: nil, keyEquivalent: "")
+        item.isEnabled = false
+        return item
+    }
+
+    private var primaryQuotaPercent: Double? {
+        usageService.snapshot?.limits.first(where: { $0.id == "codex" })?.primary?.usedPercent
+            ?? usageService.snapshot?.limits.first?.primary?.usedPercent
+    }
+
+    private func makeDashboardModel() -> DashboardModel {
+        let config = configStore.load()
+        let chinese = configStore.isChinese()
+        let statusTitle: String
+        let statusDetail: String
+        if !config.autoRetryEnabled {
+            statusTitle = text("Auto Retry is off", "自动重试已关闭")
+            statusDetail = text(
+                "Capacity errors will remain in Codex until you continue them manually.",
+                "发生模型满载错误后，需要你在 Codex 中手动继续。"
+            )
+        } else if !agent.accessibilityGranted {
+            statusTitle = text("Accessibility permission required", "需要辅助功能权限")
+            statusDetail = text(
+                "Quota and updates still work, but Auto Retry cannot submit continuation messages until permission is allowed.",
+                "额度和更新仍可使用，但授权前自动重试无法在 Codex 中提交续跑消息。"
+            )
+        } else {
+            statusTitle = text("Watching Codex", "正在监听 Codex")
+            statusDetail = text(
+                "Auto Retry is ready for selected-model capacity interruptions.",
+                "自动重试已准备好处理所选模型满载中断。"
+            )
+        }
+
+        let usageRows = makeDashboardUsageRows()
+        let usageState: String
+        if let snapshot = usageService.snapshot {
+            switch usageService.status {
+            case .loading:
+                usageState = text("Refreshing the latest account limits…", "正在刷新最新账户额度…")
+            case let .unavailable(message):
+                usageState = text(
+                    "Refresh failed; showing data from \(formatResetDate(snapshot.fetchedAt)). \(message)",
+                    "刷新失败，正在显示 \(formatResetDate(snapshot.fetchedAt)) 的数据。"
+                )
+            default:
+                usageState = text("Official Codex account limits", "Codex 官方账户额度")
+            }
+        } else {
+            switch usageService.status {
+            case let .unavailable(message): usageState = localizedUsageError(message)
+            default: usageState = text("Reading the latest account limits…", "正在读取最新账户额度…")
+            }
+        }
+
+        let usageFooter = usageService.snapshot.map {
+            text(
+                "Reset credits: \($0.resetCredits) · Updated \(formatResetDate($0.fetchedAt))",
+                "可用重置次数：\($0.resetCredits) · 更新于 \(formatResetDate($0.fetchedAt))"
+            )
+        }
+        let update = updatePresentation()
+        let languageValues = ["auto", "en", "zh"]
+        let version = Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "dev"
+        let links = updatesService.updates.prefix(3).map {
+            DashboardLink(title: $0.title, subtitle: $0.source.displayName, url: $0.link)
+        }
+
+        return DashboardModel(
+            isChinese: chinese,
+            version: version,
+            statusTitle: statusTitle,
+            statusDetail: statusDetail,
+            accessibilityGranted: agent.accessibilityGranted,
+            autoRetryEnabled: config.autoRetryEnabled,
+            usageState: usageState,
+            usageRows: usageRows,
+            usageFooter: usageFooter,
+            updatesState: update.status,
+            updateActionTitle: update.title,
+            updateActionEnabled: update.enabled,
+            automaticUpdates: config.automaticUpdates,
+            latestUpdates: links,
+            launchAtLogin: loginItemEnabled,
+            showQuotaInMenuBar: config.showQuotaInMenuBar,
+            languageIndex: languageValues.firstIndex(of: config.language) ?? 0
+        )
+    }
+
+    private func makeDashboardUsageRows() -> [DashboardUsageRow] {
+        guard let snapshot = usageService.snapshot else { return [] }
+        return snapshot.limits.flatMap { limit in
+            [limit.primary, limit.secondary].compactMap { window -> DashboardUsageRow? in
+                guard let window else { return nil }
+                let duration = window.windowDurationMins.map(usageWindowLabel) ?? text("Current window", "当前周期")
+                let detail = window.resetsAt.map {
+                    text("\(duration) window · Resets \(formatResetDate($0))", "\(duration) 周期 · 重置于 \(formatResetDate($0))")
+                } ?? text("\(duration) window", "\(duration) 周期")
+                return DashboardUsageRow(
+                    name: limit.name,
+                    percentText: text("\(formatPercent(window.usedPercent)) used", "已使用 \(formatPercent(window.usedPercent))"),
+                    usedPercent: window.usedPercent,
+                    detail: detail
+                )
+            }
+        }
+    }
+
+    private func updatePresentation() -> (title: String, enabled: Bool, status: String) {
+        let current = Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "dev"
+        switch updater.state {
+        case .checking:
+            return (text("Checking…", "正在检查…"), false, text("Checking GitHub Releases for updates.", "正在检查 GitHub Release。"))
+        case let .available(release):
+            return (
+                text("Download \(release.version)…", "下载 \(release.version)…"),
+                true,
+                text("Version \(release.version) is available. Current version: \(current).", "发现 \(release.version) 版本，当前版本：\(current)。")
+            )
+        case let .downloading(release):
+            return (text("Downloading \(release.version)…", "正在下载 \(release.version)…"), false, text("Downloading and verifying the signed update.", "正在下载并验证签名更新。"))
+        case let .ready(update):
+            return (
+                text("Install \(update.release.version) and Restart…", "安装 \(update.release.version) 并重启…"),
+                true,
+                text("The signed update is ready to install.", "签名更新已准备好安装。")
+            )
+        case .upToDate:
+            return (text("Check Again", "再次检查"), true, text("Codex Helper \(current) is up to date.", "Codex Helper \(current) 已是最新版本。"))
+        case let .failed(message):
+            return (
+                text("Retry Update Check", "重新检查更新"),
+                true,
+                text("Update check failed: \(message)", "更新检查失败，请稍后重试。")
+            )
+        case .idle:
+            return (text("Check for Updates…", "检查更新…"), true, text("Current version: \(current)", "当前版本：\(current)"))
+        }
+    }
+
+    private func localizedUsageError(_ message: String) -> String {
+        guard configStore.isChinese() else { return message }
+        switch message {
+        case "Codex CLI not found": return "未找到经过验证的 Codex App Server。"
+        case "Codex usage service stopped": return "Codex 额度服务已停止，请尝试刷新。"
+        case "Usage unavailable": return "Codex 额度暂不可用。"
+        default: return "Codex 额度暂不可用，请稍后重试。"
+        }
     }
 
     private func makeUpdateMenuItem() -> NSMenuItem {
-        let title: String
-        let enabled: Bool
-        switch updater.state {
-        case .checking:
-            title = text("Checking for Updates…", "正在检查更新…")
-            enabled = false
-        case let .available(release):
-            title = text("Download Update \(release.version)…", "下载更新 \(release.version)…")
-            enabled = true
-        case let .downloading(release):
-            title = text("Downloading \(release.version)…", "正在下载 \(release.version)…")
-            enabled = false
-        case let .ready(update):
-            title = text("Install \(update.release.version) and Restart…", "安装 \(update.release.version) 并重启…")
-            enabled = true
-        case .upToDate:
-            title = text("Check for Updates…", "检查更新…")
-            enabled = true
-        case .failed:
-            title = text("Update Check Failed — Retry…", "更新检查失败 — 重试…")
-            enabled = true
-        case .idle:
-            title = text("Check for Updates…", "检查更新…")
-            enabled = true
-        }
-        let item = NSMenuItem(title: title, action: #selector(performUpdateAction(_:)), keyEquivalent: "")
+        let presentation = updatePresentation()
+        let item = NSMenuItem(title: presentation.title, action: #selector(performUpdateAction(_:)), keyEquivalent: "")
         item.target = self
-        item.isEnabled = enabled
+        item.isEnabled = presentation.enabled
         return item
     }
 

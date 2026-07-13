@@ -48,6 +48,8 @@ flowchart LR
 
 Codex Helper 会先验证随 App 提供的 `codex` 可执行文件属于 OpenAI 签名团队，再启动 `codex app-server --stdio`，完成 JSON-RPC 初始化后调用 `account/rateLimits/read`。这个本地常驻子进程每 5 分钟刷新；由于 `account/rateLimits/updated` 是稀疏通知，收到通知后会重新读取完整快照，不会用缺省字段覆盖现有数据。内存中只保留额度比例、窗口长度、重置时间、套餐标签和重置次数；认证仍完全由 Codex 管理。
 
+主要额度的已使用比例默认常驻在菜单栏图标旁；点击一次即可在一级菜单中看到全部额度周期。主页面使用原生进度条，并集中显示重置次数、最后刷新时间、自动重试与权限状态、更新状态、官方动态、文档和常规设置。用户可以隐藏常驻百分比，而不影响后台刷新额度。
+
 ## 签名更新
 
 开启自动更新后，Updater 每天最多检查一次 `makerjackie/codex-helper` GitHub Releases。新 DMG 必须先匹配发布的 SHA-256、Developer ID 团队并通过 Gatekeeper，之后才会挂载。挂载后的 App 还必须通过严格签名要求，精确匹配 `com.makerjackie.codex-helper`、Team ID `PCJ84YD7HQ` 和 Release 版本。安装需要用户主动点击；独立更新进程会等待 Codex Helper 退出，再次验证暂存副本，以带回滚备份的方式替换 App，并重新打开验证后的版本。

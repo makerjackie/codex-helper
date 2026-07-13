@@ -595,6 +595,8 @@ func runSelfTest() -> Int32 {
     let activity = #"{"type":"event_msg","payload":{"type":"user_message"}}"#
     let legacyConfig = #"{"language":"zh"}"#.data(using: .utf8)!
     let decodedConfig = try? JSONDecoder().decode(AgentConfig.self, from: legacyConfig)
+    let hiddenQuotaConfig = #"{"showQuotaInMenuBar":false}"#.data(using: .utf8)!
+    let decodedHiddenQuotaConfig = try? JSONDecoder().decode(AgentConfig.self, from: hiddenQuotaConfig)
     let index = """
     {"id":"019f59b0-c8ec-7cf1-88be-4e6247938d01","thread_name":"Older name","updated_at":"2026-07-13T04:00:00.000000Z"}
     {"id":"019f59b0-c8ec-7cf1-88be-4e6247938d01","thread_name":"Latest name","updated_at":"2026-07-13T04:16:59.439270Z"}
@@ -625,6 +627,7 @@ func runSelfTest() -> Int32 {
     guard failure?.threadID == "019f59b0-c8ec-7cf1-88be-4e6247938d01",
           containsNewTurnActivity(activity),
           decodedConfig == AgentConfig(language: "zh"),
+          decodedHiddenQuotaConfig?.showQuotaInMenuBar == false,
           threads.count == 2,
           threads[0].name == "Another task",
           threads[1].name == "Latest name",

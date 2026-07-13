@@ -97,6 +97,7 @@ private func makeUsageWindow(_ payload: UsageWindowPayload) -> CodexUsageWindow 
 final class CodexUsageService {
     var onChange: (() -> Void)?
     private(set) var status: CodexUsageStatus = .idle
+    private(set) var snapshot: CodexUsageSnapshot?
 
     private var process: Process?
     private var inputHandle: FileHandle?
@@ -254,6 +255,9 @@ final class CodexUsageService {
 
     private func updateStatus(_ newStatus: CodexUsageStatus) {
         status = newStatus
+        if case let .available(value) = newStatus {
+            snapshot = value
+        }
         onChange?()
     }
 

@@ -25,7 +25,7 @@ So I built **Codex Helper**. Auto Retry watches for that exact failure, waits wi
 - No project-file access
 - English + 中文
 - Built-in end-to-end test
-- Codex account-limit visibility
+- Always-visible Codex quota + full dashboard
 - Official Codex updates + docs
 - Signed in-app updates
 - MIT licensed
@@ -43,7 +43,7 @@ Codex 又因为“所选模型已满载”停住了，于是我做了 **Codex He
 - 不读取项目文件
 - 中英文支持
 - 内置端到端验证
-- Codex 额度使用情况
+- 菜单栏常驻额度 + 完整主页面
 - Codex 官方动态与文档入口
 - 签名校验的应用内更新
 - MIT 开源
