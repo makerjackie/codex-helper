@@ -23,7 +23,7 @@
 点击菜单栏中的 Codex Helper 图标，可以：
 
 - 开启或关闭“自动重试”；
-- 直接在菜单栏图标旁看到主要 Codex 额度百分比；
+- 直接在菜单栏图标旁看到主要 Codex 剩余额度百分比；
 - 在一级菜单中查看全部额度周期、重置时间和可用重置次数；
 - 选择自动、English 或简体中文；
 - 开启或关闭登录时启动；
@@ -56,7 +56,7 @@ Codex Helper 会：
 
 ## 额度使用情况
 
-菜单栏百分比和一级额度区域通过官方本地 Codex App Server 的 `account/rateLimits/read` 读取数据。主页面进一步显示原生进度条、重置时间、可用重置次数和最后刷新时间。Codex Helper 复用 Codex 自己管理的登录状态，不会直接读取 `~/.codex/auth.json` 中的令牌。菜单栏额度默认显示，也可以在“常规设置”中关闭。
+菜单栏百分比和一级额度区域通过官方本地 Codex App Server 的 `account/rateLimits/read` 读取数据。接口返回的是 `usedPercent`；Codex Helper 会计算 `100 - usedPercent`，统一显示为“剩余”，与 Codex 官方界面的表达方向一致。主页面进一步显示原生进度条、重置时间、可用重置次数和最后刷新时间。Codex Helper 复用 Codex 自己管理的登录状态，不会直接读取 `~/.codex/auth.json` 中的令牌。菜单栏额度默认显示，也可以在“常规设置”中关闭。
 
 ## 自动更新
 

@@ -5,6 +5,10 @@ struct CodexUsageWindow: Codable, Equatable {
     let usedPercent: Double
     let windowDurationMins: Int?
     let resetsAt: Date?
+
+    var remainingPercent: Double {
+        min(max(100 - usedPercent, 0), 100)
+    }
 }
 
 struct CodexUsageLimit: Codable, Equatable {

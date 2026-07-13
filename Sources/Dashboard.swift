@@ -7,7 +7,7 @@ private final class DashboardStackView: NSStackView {
 struct DashboardUsageRow {
     let name: String
     let percentText: String
-    let usedPercent: Double
+    let remainingPercent: Double
     let detail: String
 }
 
@@ -231,7 +231,7 @@ final class DashboardController {
             progress.style = .bar
             progress.minValue = 0
             progress.maxValue = 100
-            progress.doubleValue = min(max(usage.usedPercent, 0), 100)
+            progress.doubleValue = usage.remainingPercent
             progress.isIndeterminate = false
 
             let detail = wrappingLabel(usage.detail)
