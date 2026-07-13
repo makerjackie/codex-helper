@@ -1,5 +1,6 @@
 import AppKit
 import ApplicationServices
+import CryptoKit
 import Foundation
 
 let capacityMessage = "Selected model is at capacity. Please try a different model."
@@ -611,6 +612,16 @@ func runSelfTest() -> Int32 {
     </channel></rss>
     """.data(using: .utf8)!
     let updates = parseCodexUpdates(changelogData: changelog, newsData: news)
+    let usageData = """
+    {"rateLimits":{"limitId":"codex","limitName":null,"primary":{"usedPercent":15,"windowDurationMins":10080,"resetsAt":1784508971},"secondary":null,"planType":"pro"},"rateLimitsByLimitId":{"codex":{"limitId":"codex","limitName":null,"primary":{"usedPercent":15,"windowDurationMins":10080,"resetsAt":1784508971},"secondary":null,"planType":"pro"}},"rateLimitResetCredits":{"availableCount":1}}
+    """.data(using: .utf8)!
+    let usage = makeUsageSnapshot(from: usageData, fetchedAt: Date(timeIntervalSince1970: 0))
+    let sparseUsageData = """
+    {"rateLimits":{},"rateLimitsByLimitId":{"spark":{"limitId":null,"limitName":"Spark","primary":{"usedPercent":0,"windowDurationMins":null,"resetsAt":null}}}}
+    """.data(using: .utf8)!
+    let sparseUsage = makeUsageSnapshot(from: sparseUsageData, fetchedAt: Date(timeIntervalSince1970: 0))
+    let checksumData = Data("codex-helper".utf8)
+    let checksum = SHA256.hash(data: checksumData).map { String(format: "%02x", $0) }.joined()
     guard failure?.threadID == "019f59b0-c8ec-7cf1-88be-4e6247938d01",
           containsNewTurnActivity(activity),
           decodedConfig == AgentConfig(language: "zh"),
@@ -620,6 +631,14 @@ func runSelfTest() -> Int32 {
           updates.count == 2,
           updates.contains(where: { $0.title == "Codex release" }),
           updates.contains(where: { $0.title == "Codex news" }),
+          usage?.limits.first?.primary?.usedPercent == 15,
+          usage?.resetCredits == 1,
+          sparseUsage?.limits.first?.id == "spark",
+          sparseUsage?.limits.first?.primary?.windowDurationMins == nil,
+          sparseUsage?.limits.first?.primary?.resetsAt == nil,
+          isVersion("0.3.0", newerThan: "0.2.9"),
+          !isVersion("0.2.0", newerThan: "0.2.0"),
+          checksumMatches(data: checksumData, checksumText: "\(checksum)  Codex-Helper.dmg"),
           !retryPromptEnglish.isEmpty,
           !retryPromptChinese.isEmpty,
           !testPromptEnglish.isEmpty,

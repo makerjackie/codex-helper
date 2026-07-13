@@ -4,17 +4,20 @@ struct AgentConfig: Codable, Equatable {
     var language: String
     var autoRetryEnabled: Bool
     var launchAtLogin: Bool
+    var automaticUpdates: Bool
 
-    init(language: String = "auto", autoRetryEnabled: Bool = true, launchAtLogin: Bool = true) {
+    init(language: String = "auto", autoRetryEnabled: Bool = true, launchAtLogin: Bool = true, automaticUpdates: Bool = true) {
         self.language = language
         self.autoRetryEnabled = autoRetryEnabled
         self.launchAtLogin = launchAtLogin
+        self.automaticUpdates = automaticUpdates
     }
 
     private enum CodingKeys: String, CodingKey {
         case language
         case autoRetryEnabled
         case launchAtLogin
+        case automaticUpdates
     }
 
     init(from decoder: Decoder) throws {
@@ -22,6 +25,7 @@ struct AgentConfig: Codable, Equatable {
         language = try container.decodeIfPresent(String.self, forKey: .language) ?? "auto"
         autoRetryEnabled = try container.decodeIfPresent(Bool.self, forKey: .autoRetryEnabled) ?? true
         launchAtLogin = try container.decodeIfPresent(Bool.self, forKey: .launchAtLogin) ?? true
+        automaticUpdates = try container.decodeIfPresent(Bool.self, forKey: .automaticUpdates) ?? true
     }
 }
 

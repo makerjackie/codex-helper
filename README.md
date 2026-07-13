@@ -6,7 +6,7 @@
   <img src="assets/app-icon-source.png" width="180" alt="Codex Helper icon">
 </p>
 
-An unofficial, open-source macOS menu bar companion for small utilities that make Codex more reliable. **Auto Retry** keeps interrupted tasks moving, while built-in official links and feeds make Codex updates easier to find.
+An unofficial, open-source macOS menu bar companion for Codex: guarded Auto Retry, account-limit visibility, official updates and documentation, and signed in-app updates.
 
 > Not affiliated with or endorsed by OpenAI.
 
@@ -23,8 +23,10 @@ On first launch, allow **Codex Helper** in **System Settings → Privacy & Secur
 Click the Codex Helper menu bar icon to:
 
 - turn Auto Retry on or off;
+- see Codex quota usage, reset time, and available reset count;
 - choose Automatic, English, or Simplified Chinese;
 - enable or disable Launch at Login;
+- automatically check and download signed Codex Helper updates;
 - run a safe end-to-end Auto Retry test against a task you choose;
 - read the latest official Codex changelog and Codex-related OpenAI news;
 - open Codex documentation, troubleshooting, commands, and Tibo's X profile;
@@ -50,6 +52,16 @@ Codex Helper:
 5. Opens the original Codex task, submits a localized continuation prompt inside Codex, and restores the app you were using.
 
 It does not modify Codex, proxy network traffic, read project files, or store conversation content. It retries the same task; it does not automatically switch models.
+
+## Usage
+
+The Usage submenu reads `account/rateLimits/read` from the official local Codex App Server. It shows each available quota window's consumed percentage and reset time, plus the number of reset credits when present. Codex Helper uses the authentication already managed by Codex and never reads tokens directly from `~/.codex/auth.json`.
+
+## Automatic updates
+
+Automatic updates are enabled by default. Codex Helper checks the latest GitHub Release at most once per day and downloads a newer DMG in the background. Installation remains a visible **Install and Restart** action so an update never interrupts work unexpectedly.
+
+Before replacement, Codex Helper verifies the published SHA-256 checksum, Developer ID bundle identifier and Team ID, and Gatekeeper acceptance. If the app location is not writable, it leaves the current version untouched and reports that automatic installation is unavailable.
 
 ## Verify Auto Retry without waiting for an outage
 

@@ -44,9 +44,17 @@ flowchart LR
 
 “最新动态”菜单读取公开的 Codex Changelog RSS 和 OpenAI News RSS，并对后者筛选 Codex 内容。每个成功解析的来源会独立合并到 Codex Helper 的 Application Support 缓存；成功来源每 6 小时刷新，失败请求至少退避 15 分钟。文档和 Tibo 项均为普通外部链接，不抓取 X 时间线。
 
+## 额度使用情况
+
+Codex Helper 会先验证随 App 提供的 `codex` 可执行文件属于 OpenAI 签名团队，再启动 `codex app-server --stdio`，完成 JSON-RPC 初始化后调用 `account/rateLimits/read`。这个本地常驻子进程每 5 分钟刷新；由于 `account/rateLimits/updated` 是稀疏通知，收到通知后会重新读取完整快照，不会用缺省字段覆盖现有数据。内存中只保留额度比例、窗口长度、重置时间、套餐标签和重置次数；认证仍完全由 Codex 管理。
+
+## 签名更新
+
+开启自动更新后，Updater 每天最多检查一次 `makerjackie/codex-helper` GitHub Releases。新 DMG 必须先匹配发布的 SHA-256、Developer ID 团队并通过 Gatekeeper，之后才会挂载。挂载后的 App 还必须通过严格签名要求，精确匹配 `com.makerjackie.codex-helper`、Team ID `PCJ84YD7HQ` 和 Release 版本。安装需要用户主动点击；独立更新进程会等待 Codex Helper 退出，再次验证暂存副本，以带回滚备份的方式替换 App，并重新打开验证后的版本。
+
 ## 隐私与安全边界
 
-- 没有后端服务或遥测；“最新动态”只会直接请求 OpenAI 官方公开 RSS。
+- 没有后端服务或遥测；网络请求只会直接访问 OpenAI 官方公开 RSS 和项目 GitHub Releases API。
 - 不读取项目文件。
 - 不保存对话内容。
 - 持久化状态只包含日志游标、任务 ID、时间戳和重试次数。

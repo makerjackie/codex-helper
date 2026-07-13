@@ -6,7 +6,7 @@
   <img src="assets/app-icon-source.png" width="180" alt="Codex Helper 图标">
 </p>
 
-一个非官方、开源的 macOS 菜单栏辅助工具。核心功能 **自动重试**让中断任务继续运行，同时集中提供 Codex 官方动态和常用文档入口。
+一个非官方、开源的 Codex macOS 菜单栏辅助工具：安全自动重试、额度查看、官方动态与文档，以及经过签名校验的应用内更新。
 
 > 本项目与 OpenAI 无隶属或背书关系。
 
@@ -23,8 +23,10 @@
 点击菜单栏中的 Codex Helper 图标，可以：
 
 - 开启或关闭“自动重试”；
+- 查看 Codex 额度使用比例、重置时间和可用重置次数；
 - 选择自动、English 或简体中文；
 - 开启或关闭登录时启动；
+- 自动检查并下载经过签名的 Codex Helper 更新；
 - 对自己选择的任务运行安全的自动重试端到端测试；
 - 阅读 Codex 官方更新日志和 OpenAI News 中与 Codex 有关的动态；
 - 打开 Codex 文档、命令参考、故障排查和 Tibo 的 X 主页；
@@ -50,6 +52,16 @@ Codex Helper 会：
 5. 打开原 Codex 任务，在 Codex 内提交本地化续跑消息，再恢复此前使用的 App。
 
 它不会修改 Codex、代理网络请求、读取项目文件或保存对话内容。它重试的是同一个任务，不会自动切换模型。
+
+## 额度使用情况
+
+“额度使用”子菜单通过官方本地 Codex App Server 的 `account/rateLimits/read` 读取数据，显示各额度窗口的已使用比例、重置时间，以及存在时的可用重置次数。Codex Helper 复用 Codex 自己管理的登录状态，不会直接读取 `~/.codex/auth.json` 中的令牌。
+
+## 自动更新
+
+自动更新默认开启。Codex Helper 每天最多检查一次最新 GitHub Release；发现新版本后在后台下载 DMG。真正安装仍需要点击明确可见的“安装并重启”，不会在工作过程中突然退出。
+
+替换 App 前会依次验证发布的 SHA-256、Developer ID Bundle ID、Team ID 和 Gatekeeper 结果。如果 App 所在位置不可写，当前版本保持不变，并提示无法自动安装。
 
 ## 不等真实故障也能验证
 
