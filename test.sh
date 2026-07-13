@@ -3,15 +3,18 @@ set -euo pipefail
 
 ROOT="${0:A:h}"
 BUILD_DIR="$ROOT/.build"
+ARCHITECTURE="$(uname -m)"
 
 mkdir -p "$BUILD_DIR"
-xcrun swiftc -warnings-as-errors "$ROOT/Sources/main.swift" \
+xcrun swiftc -warnings-as-errors \
+  -target "$ARCHITECTURE-apple-macosx13.0" \
+  "$ROOT"/Sources/*.swift \
   -framework AppKit \
   -framework ApplicationServices \
-  -o "$BUILD_DIR/CodexAutoRetry"
+  -framework ServiceManagement \
+  -o "$BUILD_DIR/CodexHelper"
 
-"$BUILD_DIR/CodexAutoRetry" --self-test
+"$BUILD_DIR/CodexHelper" --self-test
 plutil -lint "$ROOT/Resources/Info.plist"
-plutil -lint "$ROOT/Resources/com.makerjackie.codex-auto-retry.plist"
 ruby -rjson -e 'JSON.parse(File.read(ARGV.fetch(0)))' "$ROOT/Resources/config.json"
-zsh -n "$ROOT/install.sh" "$ROOT/uninstall.sh" "$ROOT/test.sh"
+zsh -n "$ROOT/install.sh" "$ROOT/uninstall.sh" "$ROOT/test.sh" "$ROOT/scripts/build.sh" "$ROOT/scripts/package-release.sh"

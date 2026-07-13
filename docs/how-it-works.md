@@ -42,8 +42,8 @@ English and Simplified Chinese prompts are built in. `config.json` can use `auto
 - No project files are read.
 - No conversation content is retained.
 - Persistent state contains log cursor offsets, task IDs, timestamps, and retry counters.
-- Accessibility permission is used only to synthesize the retry keystrokes.
-- The app is ad-hoc signed locally during installation; it is not notarized.
+- Accessibility permission is used only to synthesize retry keystrokes targeted to the Codex process, after confirming Codex is frontmost.
+- GitHub Release builds use Developer ID signing, hardened runtime, Apple notarization, and stapled tickets. Source builds installed with `install.sh` use local ad-hoc signing.
 
 ## Limitations
 
