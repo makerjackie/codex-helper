@@ -32,13 +32,21 @@ When a retry is scheduled, the agent records the current byte offset of that tas
 
 ## Submission
 
-The helper opens `codex://threads/<thread-id>`, activates the Codex desktop app, focuses the composer, types a localized continuation message, and presses Return. It then restores the previously frontmost app.
+The helper opens `codex://threads/<thread-id>`, activates the Codex desktop app, and asks Accessibility for the focused control. It proceeds only when Codex is frontmost and that control is an empty text area. It sets and verifies the localized continuation value, presses Return, checks the target session for that prompt, and then restores the previously frontmost app.
 
 English and Simplified Chinese prompts are built in. `config.json` can use `auto`, `en`, or `zh`; the configuration is read at submission time.
 
+## End-to-end verification
+
+**Test Auto Retry…** reads recent visible tasks from `session_index.jsonl` and lets the user explicitly choose an idle task with an empty draft. It generates a synthetic capacity log line for that task, passes it through the production matcher and visible-task check, records the session baseline, waits three seconds, checks for newer activity, and then runs the same guarded GUI submission path with a clearly marked prompt. It bypasses only the need to wait for a real service-side capacity failure.
+
+## Official updates and resources
+
+The What's New menu fetches the public Codex changelog RSS and OpenAI News RSS, filtering the broader feed for Codex. Each successfully parsed source is merged independently into the cache under Codex Helper's Application Support directory. Successful feeds refresh every six hours; failed requests back off for at least 15 minutes. Documentation and Tibo entries are plain external links; no X timeline is scraped.
+
 ## Privacy and security
 
-- No network service or telemetry.
+- No backend service or telemetry. The What's New menu makes direct HTTPS requests only to official OpenAI public RSS feeds.
 - No project files are read.
 - No conversation content is retained.
 - Persistent state contains log cursor offsets, task IDs, timestamps, and retry counters.

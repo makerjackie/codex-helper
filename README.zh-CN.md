@@ -6,7 +6,7 @@
   <img src="assets/app-icon-source.png" width="180" alt="Codex Helper 图标">
 </p>
 
-一个非官方、开源的 macOS 菜单栏辅助工具，逐步加入让 Codex 更可靠、更顺手的小功能。**自动重试**是第一个功能。
+一个非官方、开源的 macOS 菜单栏辅助工具。核心功能 **自动重试**让中断任务继续运行，同时集中提供 Codex 官方动态和常用文档入口。
 
 > 本项目与 OpenAI 无隶属或背书关系。
 
@@ -25,6 +25,9 @@
 - 开启或关闭“自动重试”；
 - 选择自动、English 或简体中文；
 - 开启或关闭登录时启动；
+- 对自己选择的任务运行安全的自动重试端到端测试；
+- 阅读 Codex 官方更新日志和 OpenAI News 中与 Codex 有关的动态；
+- 打开 Codex 文档、命令参考、故障排查和 Tibo 的 X 主页；
 - 打开设置、辅助功能设置或日志；
 - 完全退出 Codex Helper。
 
@@ -47,6 +50,16 @@ Codex Helper 会：
 5. 打开原 Codex 任务，在 Codex 内提交本地化续跑消息，再恢复此前使用的 App。
 
 它不会修改 Codex、代理网络请求、读取项目文件或保存对话内容。它重试的是同一个任务，不会自动切换模型。
+
+## 不等真实故障也能验证
+
+在菜单栏选择 **测试自动重试…**，选择一个处于空闲状态、输入框里没有草稿的最近 Codex 任务并确认。Codex Helper 会生成一条带有该任务 ID 的模拟容量错误，交给正式匹配器和可见任务检查处理；3 秒后再次检查新活动，再打开任务并提交一条明确标记的测试消息。看到包含 **Codex Helper 测试通过** 的回复，就证明整条任务定位与 GUI 控制链路能在你当前安装的 Codex 版本上工作。
+
+真实故障发生时，Codex 日志会在精确的容量错误旁写入 `thread_id=<UUID>`。Codex Helper 会用 `~/.codex/session_index.jsonl` 验证该 UUID，退避等待，重试前检查任务是否已经有新活动，然后打开 `codex://threads/<UUID>`。只有辅助功能确认 Codex 位于前台、当前聚焦控件是空白文本输入区时才会提交；提交后还会检查目标任务 session 是否收到了该消息。
+
+## 最新动态和了解 Codex
+
+菜单读取公开的 [Codex Changelog RSS](https://learn.chatgpt.com/docs/changelog/rss.xml) 与 [OpenAI News RSS](https://openai.com/news/rss.xml)，后者只保留与 Codex 有关的内容。结果会缓存在本地；成功来源每 6 小时刷新一次，失败后至少退避 15 分钟。Tibo 项只是普通浏览器链接，不会抓取 X 时间线。
 
 ## 从源码安装
 
