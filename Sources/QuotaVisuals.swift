@@ -14,6 +14,15 @@ func quotaLevel(for remainingPercent: Double?) -> QuotaLevel {
     return .healthy
 }
 
+func quotaAccentColor(for level: QuotaLevel) -> NSColor {
+    switch level {
+    case .healthy: return .systemTeal
+    case .attention: return .systemOrange
+    case .critical: return .systemPink
+    case .unavailable: return .tertiaryLabelColor
+    }
+}
+
 func formatQuotaPercent(_ value: Double) -> String {
     value.rounded() == value ? "\(Int(value))%" : String(format: "%.1f%%", value)
 }
@@ -28,71 +37,20 @@ func makeHorizontalRow(left: NSView, right: NSView) -> NSStackView {
     return row
 }
 
-private extension QuotaLevel {
-    var accentColor: NSColor {
-        switch self {
-        case .healthy: return .systemBlue
-        case .attention: return .systemOrange
-        case .critical: return .systemRed
-        case .unavailable: return .tertiaryLabelColor
-        }
-    }
+final class QuotaRingView: NSView {
+    let remainingPercent: Double?
+    let level: QuotaLevel
+    let lineWidth: CGFloat
 
-    func gradientColors(dark: Bool) -> [NSColor] {
-        if dark {
-            switch self {
-            case .healthy:
-                return [
-                    NSColor(calibratedRed: 0.10, green: 0.22, blue: 0.34, alpha: 1),
-                    NSColor(calibratedRed: 0.09, green: 0.28, blue: 0.25, alpha: 1)
-                ]
-            case .attention:
-                return [
-                    NSColor(calibratedRed: 0.32, green: 0.24, blue: 0.09, alpha: 1),
-                    NSColor(calibratedRed: 0.34, green: 0.16, blue: 0.09, alpha: 1)
-                ]
-            case .critical:
-                return [
-                    NSColor(calibratedRed: 0.34, green: 0.12, blue: 0.11, alpha: 1),
-                    NSColor(calibratedRed: 0.31, green: 0.10, blue: 0.22, alpha: 1)
-                ]
-            case .unavailable:
-                return [NSColor(calibratedWhite: 0.16, alpha: 1), NSColor(calibratedWhite: 0.20, alpha: 1)]
-            }
-        }
-
-        switch self {
-        case .healthy:
-            return [
-                NSColor(calibratedRed: 0.86, green: 0.94, blue: 1.00, alpha: 1),
-                NSColor(calibratedRed: 0.89, green: 0.98, blue: 0.93, alpha: 1)
-            ]
-        case .attention:
-            return [
-                NSColor(calibratedRed: 1.00, green: 0.96, blue: 0.80, alpha: 1),
-                NSColor(calibratedRed: 1.00, green: 0.89, blue: 0.81, alpha: 1)
-            ]
-        case .critical:
-            return [
-                NSColor(calibratedRed: 1.00, green: 0.89, blue: 0.86, alpha: 1),
-                NSColor(calibratedRed: 1.00, green: 0.84, blue: 0.91, alpha: 1)
-            ]
-        case .unavailable:
-            return [NSColor(calibratedWhite: 0.95, alpha: 1), NSColor(calibratedWhite: 0.91, alpha: 1)]
-        }
-    }
-}
-
-final class QuotaSurfaceView: NSView {
-    var level: QuotaLevel {
-        didSet { needsDisplay = true }
-    }
-    let cornerRadius: CGFloat
-
-    init(level: QuotaLevel, cornerRadius: CGFloat = 22) {
-        self.level = level
-        self.cornerRadius = cornerRadius
+    init(remainingPercent: Double?, lineWidth: CGFloat = 9) {
+        self.remainingPercent = remainingPercent
+        self.level = quotaLevel(for: remainingPercent)
+        self.lineWidth = lineWidth
         super.init(frame: .zero)
+        setAccessibilityElement(true)
+        setAccessibilityRole(.progressIndicator)
+        setAccessibilityLabel("Codex quota")
+        setAccessibilityValue(remainingPercent.map(formatQuotaPercent) ?? "Unavailable")
     }
 
     @available(*, unavailable)
@@ -107,33 +65,62 @@ final class QuotaSurfaceView: NSView {
 
     override func draw(_ dirtyRect: NSRect) {
         super.draw(dirtyRect)
-        let path = NSBezierPath(roundedRect: bounds.insetBy(dx: 0.5, dy: 0.5), xRadius: cornerRadius, yRadius: cornerRadius)
-        let dark = effectiveAppearance.bestMatch(from: [.aqua, .darkAqua]) == .darkAqua
-        NSGraphicsContext.saveGraphicsState()
-        path.addClip()
-        NSGradient(colors: level.gradientColors(dark: dark))?.draw(in: path, angle: -18)
-        NSGraphicsContext.restoreGraphicsState()
+        let inset = lineWidth / 2 + 2
+        let diameter = min(bounds.width, bounds.height) - inset * 2
+        let ringRect = NSRect(
+            x: bounds.midX - diameter / 2,
+            y: bounds.midY - diameter / 2,
+            width: diameter,
+            height: diameter
+        )
 
-        NSColor.separatorColor.withAlphaComponent(dark ? 0.55 : 0.38).setStroke()
-        path.lineWidth = 1
-        path.stroke()
+        let track = NSBezierPath(ovalIn: ringRect)
+        track.lineWidth = lineWidth
+        NSColor.labelColor.withAlphaComponent(0.10).setStroke()
+        track.stroke()
+
+        if let remainingPercent {
+            let value = min(max(remainingPercent, 0), 100) / 100
+            let radius = diameter / 2
+            let progress = NSBezierPath()
+            progress.lineWidth = lineWidth
+            progress.lineCapStyle = .round
+            progress.appendArc(
+                withCenter: NSPoint(x: bounds.midX, y: bounds.midY),
+                radius: radius,
+                startAngle: 90,
+                endAngle: 90 - 360 * value,
+                clockwise: true
+            )
+            quotaAccentColor(for: level).setStroke()
+            progress.stroke()
+        }
+
+        let valueText = remainingPercent.map(formatQuotaPercent) ?? "—"
+        let fontSize = min(bounds.width, bounds.height) * 0.25
+        let attributes: [NSAttributedString.Key: Any] = [
+            .font: NSFont.monospacedDigitSystemFont(ofSize: fontSize, weight: .semibold),
+            .foregroundColor: NSColor.labelColor
+        ]
+        let size = valueText.size(withAttributes: attributes)
+        valueText.draw(
+            at: NSPoint(x: bounds.midX - size.width / 2, y: bounds.midY - size.height / 2),
+            withAttributes: attributes
+        )
     }
 }
 
-final class QuotaProgressView: NSView {
-    var remainingPercent: Double {
-        didSet { needsDisplay = true }
-    }
-    var level: QuotaLevel {
-        didSet { needsDisplay = true }
-    }
+final class QuotaAccentDotView: NSView {
+    let level: QuotaLevel
 
-    init(remainingPercent: Double, level: QuotaLevel) {
-        self.remainingPercent = remainingPercent
+    init(level: QuotaLevel) {
         self.level = level
         super.init(frame: .zero)
         translatesAutoresizingMaskIntoConstraints = false
-        heightAnchor.constraint(equalToConstant: 7).isActive = true
+        NSLayoutConstraint.activate([
+            widthAnchor.constraint(equalToConstant: 8),
+            heightAnchor.constraint(equalToConstant: 8)
+        ])
     }
 
     @available(*, unavailable)
@@ -142,26 +129,21 @@ final class QuotaProgressView: NSView {
     }
 
     override func draw(_ dirtyRect: NSRect) {
-        super.draw(dirtyRect)
-        let track = NSBezierPath(roundedRect: bounds, xRadius: bounds.height / 2, yRadius: bounds.height / 2)
-        NSColor.labelColor.withAlphaComponent(0.10).setFill()
-        track.fill()
-
-        let value = min(max(remainingPercent, 0), 100) / 100
-        let fillRect = NSRect(x: 0, y: 0, width: bounds.width * value, height: bounds.height)
-        guard fillRect.width > 0 else { return }
-        let fill = NSBezierPath(roundedRect: fillRect, xRadius: bounds.height / 2, yRadius: bounds.height / 2)
-        level.accentColor.setFill()
-        fill.fill()
+        quotaAccentColor(for: level).setFill()
+        NSBezierPath(ovalIn: bounds).fill()
     }
 }
 
-final class DashboardSurfaceView: NSView {
-    let cornerRadius: CGFloat
-
-    init(cornerRadius: CGFloat = 16) {
-        self.cornerRadius = cornerRadius
+final class NeutralSurfaceView: NSVisualEffectView {
+    init(cornerRadius: CGFloat, floating: Bool = false) {
         super.init(frame: .zero)
+        material = floating ? .popover : .contentBackground
+        blendingMode = floating ? .behindWindow : .withinWindow
+        state = .active
+        wantsLayer = true
+        layer?.cornerRadius = cornerRadius
+        layer?.masksToBounds = true
+        updateBorder()
     }
 
     @available(*, unavailable)
@@ -171,17 +153,12 @@ final class DashboardSurfaceView: NSView {
 
     override func viewDidChangeEffectiveAppearance() {
         super.viewDidChangeEffectiveAppearance()
-        needsDisplay = true
+        updateBorder()
     }
 
-    override func draw(_ dirtyRect: NSRect) {
-        super.draw(dirtyRect)
-        let path = NSBezierPath(roundedRect: bounds.insetBy(dx: 0.5, dy: 0.5), xRadius: cornerRadius, yRadius: cornerRadius)
-        NSColor.controlBackgroundColor.withAlphaComponent(0.72).setFill()
-        path.fill()
-        NSColor.separatorColor.withAlphaComponent(0.55).setStroke()
-        path.lineWidth = 1
-        path.stroke()
+    private func updateBorder() {
+        layer?.borderWidth = 1
+        layer?.borderColor = NSColor.separatorColor.withAlphaComponent(0.45).cgColor
     }
 }
 
@@ -192,7 +169,7 @@ final class DashboardDividerView: NSView {
     }
 
     override func draw(_ dirtyRect: NSRect) {
-        NSColor.separatorColor.withAlphaComponent(0.65).setFill()
+        NSColor.separatorColor.withAlphaComponent(0.55).setFill()
         dirtyRect.fill()
     }
 }
@@ -225,7 +202,7 @@ final class StatusPillLabel: NSTextField {
 
     override func draw(_ dirtyRect: NSRect) {
         let background = NSBezierPath(roundedRect: bounds, xRadius: 10, yRadius: 10)
-        pillColor.withAlphaComponent(0.12).setFill()
+        pillColor.withAlphaComponent(0.10).setFill()
         background.fill()
         super.draw(dirtyRect)
     }

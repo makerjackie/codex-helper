@@ -135,7 +135,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         menu.addItem(.separator())
         addUsageItems(to: menu)
         let widgetItem = NSMenuItem(
-            title: text("Desktop Quota Widget", "桌面额度小组件"),
+            title: text("Codex Status Rail", "Codex 状态轨道"),
             action: #selector(toggleQuotaWidget(_:)),
             keyEquivalent: ""
         )
