@@ -6,7 +6,7 @@
   <img src="assets/app-icon-source.png" width="180" alt="Codex Helper icon">
 </p>
 
-An unofficial, open-source macOS menu bar companion for small utilities that make Codex more reliable. **Auto Retry** is its first feature.
+An unofficial, open-source macOS menu bar companion for small utilities that make Codex more reliable. **Auto Retry** keeps interrupted tasks moving, while built-in official links and feeds make Codex updates easier to find.
 
 > Not affiliated with or endorsed by OpenAI.
 
@@ -25,6 +25,9 @@ Click the Codex Helper menu bar icon to:
 - turn Auto Retry on or off;
 - choose Automatic, English, or Simplified Chinese;
 - enable or disable Launch at Login;
+- run a safe end-to-end Auto Retry test against a task you choose;
+- read the latest official Codex changelog and Codex-related OpenAI news;
+- open Codex documentation, troubleshooting, commands, and Tibo's X profile;
 - open Settings, Accessibility Settings, or logs;
 - quit Codex Helper completely.
 
@@ -47,6 +50,16 @@ Codex Helper:
 5. Opens the original Codex task, submits a localized continuation prompt inside Codex, and restores the app you were using.
 
 It does not modify Codex, proxy network traffic, read project files, or store conversation content. It retries the same task; it does not automatically switch models.
+
+## Verify Auto Retry without waiting for an outage
+
+Choose **Test Auto Retry…** from the menu bar, select an idle recent Codex task with no draft in its composer, and confirm. Codex Helper creates a synthetic capacity event containing that task ID, runs it through the production matcher and visible-task check, waits three seconds, checks for newer activity, then opens the task and submits one clearly marked test message. A reply containing **Codex Helper test passed** verifies the complete routing and GUI-control chain on your installed Codex version.
+
+During a real failure, the Codex log line contains `thread_id=<UUID>` beside the exact capacity error. Codex Helper verifies that UUID against `~/.codex/session_index.jsonl`, waits with backoff, re-checks the task for newer activity, then opens `codex://threads/<UUID>`. It submits only when Accessibility reports that Codex is frontmost and the focused composer is an empty text area; it also checks the target session afterward for the submitted prompt.
+
+## What’s New and Learn Codex
+
+The menu reads the public [Codex changelog RSS](https://learn.chatgpt.com/docs/changelog/rss.xml) and [OpenAI News RSS](https://openai.com/news/rss.xml), keeping only Codex-related OpenAI News items. Results are cached locally; successful feeds refresh every six hours, while failures back off for at least 15 minutes. The Tibo entry is a normal browser link; Codex Helper does not scrape X.
 
 ## Build from source
 
