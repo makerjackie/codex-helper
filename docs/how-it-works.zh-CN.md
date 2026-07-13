@@ -42,8 +42,8 @@ flowchart LR
 - 不读取项目文件。
 - 不保存对话内容。
 - 持久化状态只包含日志游标、任务 ID、时间戳和重试次数。
-- 辅助功能权限只用于模拟提交重试消息所需的键盘操作。
-- 安装时在本机进行 ad-hoc 签名，没有 Apple 公证。
+- 辅助功能权限只用于向 Codex 进程定向发送重试键盘操作，并且发送前会确认 Codex 位于前台。
+- GitHub Release 版本使用 Developer ID 签名、Hardened Runtime、Apple 公证和 stapled ticket；通过 `install.sh` 构建的源码版本使用本机 ad-hoc 签名。
 
 ## 已知限制
 

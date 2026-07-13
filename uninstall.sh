@@ -1,12 +1,13 @@
 #!/bin/zsh
 set -euo pipefail
 
-LABEL="com.makerjackie.codex-auto-retry"
-PLIST_PATH="$HOME/Library/LaunchAgents/$LABEL.plist"
+OLD_LABEL="com.makerjackie.codex-auto-retry"
 
-launchctl bootout "gui/$UID/$LABEL" 2>/dev/null || true
-rm -f "$PLIST_PATH"
+pkill -x CodexHelper 2>/dev/null || true
+launchctl bootout "gui/$UID/$OLD_LABEL" 2>/dev/null || true
+rm -f "$HOME/Library/LaunchAgents/$OLD_LABEL.plist"
 rm -rf "$HOME/Applications/Codex Auto Retry.app"
+rm -rf "$HOME/Applications/Codex Helper.app"
 
-echo "Uninstalled Codex Auto Retry. Runtime logs/state remain in:"
-echo "$HOME/Library/Application Support/CodexAutoRetry"
+echo "Uninstalled Codex Helper. Runtime logs/state remain in:"
+echo "$HOME/Library/Application Support/CodexHelper"

@@ -1,3 +1,5 @@
 {
-  "language": "auto"
+  "autoRetryEnabled": true,
+  "language": "auto",
+  "launchAtLogin": true
 }
