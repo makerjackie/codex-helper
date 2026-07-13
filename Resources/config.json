@@ -3,5 +3,6 @@
   "automaticUpdates": true,
   "language": "auto",
   "launchAtLogin": true,
-  "showQuotaInMenuBar": true
+  "showQuotaInMenuBar": true,
+  "showQuotaWidget": false
 }

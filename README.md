@@ -6,7 +6,7 @@
   <img src="assets/app-icon-source.png" width="180" alt="Codex Helper icon">
 </p>
 
-An unofficial, open-source macOS menu bar companion for Codex: guarded Auto Retry, account-limit visibility, official updates and documentation, and signed in-app updates.
+An unofficial, open-source macOS companion for Codex: a color-aware desktop quota widget, guarded Auto Retry, official updates and documentation, and signed in-app updates.
 
 > Not affiliated with or endorsed by OpenAI.
 
@@ -24,6 +24,7 @@ Click the Codex Helper menu bar icon to:
 
 - turn Auto Retry on or off;
 - see the primary Codex remaining quota percentage directly beside the menu bar icon;
+- show or hide an always-on-top desktop quota widget with reset countdowns;
 - see every quota window, reset time, and reset-credit count in the first-level menu;
 - choose Automatic, English, or Simplified Chinese;
 - enable or disable Launch at Login;
@@ -34,7 +35,11 @@ Click the Codex Helper menu bar icon to:
 - open the dashboard, Accessibility Settings, or logs;
 - quit Codex Helper completely.
 
-You can also search for **Codex Helper** in Spotlight. Opening it again brings up the complete dashboard with quota progress, Auto Retry and permission status, app updates, official news, documentation, and general settings.
+You can also search for **Codex Helper** in Spotlight. Opening it again brings up the redesigned dashboard, led by quota status instead of a stack of settings cards, while keeping Auto Retry, updates, news, documentation, and general settings available on one page.
+
+<p align="center">
+  <img src="assets/quota-widget-v0.5.0.jpg" width="340" alt="Codex Helper desktop quota widget">
+</p>
 
 ## Auto Retry
 
@@ -56,7 +61,7 @@ It does not modify Codex, proxy network traffic, read project files, or store co
 
 ## Usage
 
-The menu bar percentage and first-level quota section read `account/rateLimits/read` from the official local Codex App Server. The API reports `usedPercent`; Codex Helper displays the remaining quota as `100 - usedPercent`, matching the direction used by Codex itself. The dashboard adds native progress bars, reset times, reset credits, and the last refresh time. Codex Helper uses the authentication already managed by Codex and never reads tokens directly from `~/.codex/auth.json`. The menu bar percentage is enabled by default and can be hidden under General settings.
+The menu bar percentage, dashboard, and desktop widget read `account/rateLimits/read` from the official local Codex App Server. The API reports `usedPercent`; Codex Helper displays the remaining quota as `100 - usedPercent`, matching the direction used by Codex itself. Quota surfaces change from blue-green at 50–100%, to amber at 10–50%, to coral-red below 10%. The widget also shows reset countdowns, reset credits, refresh, dashboard, and hide controls. Codex Helper uses the authentication already managed by Codex and never reads tokens directly from `~/.codex/auth.json`.
 
 ## Automatic updates
 
