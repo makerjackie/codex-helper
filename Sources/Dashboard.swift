@@ -55,6 +55,7 @@ struct DashboardActions {
     let testAutoRetry: Selector
     let refreshUsage: Selector
     let toggleQuotaWidget: Selector
+    let showNativeWidgetHelp: Selector
     let performUpdate: Selector
     let toggleAutomaticUpdates: Selector
     let refreshNews: Selector
@@ -224,11 +225,15 @@ final class DashboardController {
         overview.spacing = 9
 
         let refresh = button(model.isChinese ? "刷新" : "Refresh", action: actions.refreshUsage)
-        let widgetTitle = model.showQuotaWidget
-            ? (model.isChinese ? "隐藏状态轨道" : "Hide Status Rail")
-            : (model.isChinese ? "显示状态轨道" : "Show Status Rail")
-        let widget = button(widgetTitle, action: actions.toggleQuotaWidget, emphasized: true)
-        let controls = NSStackView(views: [widget, refresh])
+        let railTitle = model.showQuotaWidget
+            ? (model.isChinese ? "隐藏悬浮轨道" : "Hide Floating Rail")
+            : (model.isChinese ? "显示悬浮轨道" : "Show Floating Rail")
+        let rail = button(railTitle, action: actions.toggleQuotaWidget, emphasized: true)
+        let nativeWidget = button(
+            model.isChinese ? "添加 macOS 小组件…" : "Add macOS Widget…",
+            action: actions.showNativeWidgetHelp
+        )
+        let controls = NSStackView(views: [rail, nativeWidget, refresh])
         controls.orientation = .vertical
         controls.alignment = .trailing
         controls.spacing = 8

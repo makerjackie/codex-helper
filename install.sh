@@ -20,7 +20,7 @@ if [[ ! -f "$SUPPORT_DIR/config.json" ]]; then
   install -m 644 "$ROOT/Resources/config.json" "$SUPPORT_DIR/config.json"
 fi
 
-"$EXECUTABLE" --self-test
+CODEX_HELPER_DISABLE_ACCESSIBILITY_PROMPTS=1 "$EXECUTABLE" --self-test
 open "$APP_PATH"
 
 echo "Installed: $APP_PATH"

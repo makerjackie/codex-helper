@@ -1,6 +1,7 @@
 import AppKit
 import ApplicationServices
 import ServiceManagement
+import WidgetKit
 
 final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     private let configStore = ConfigStore()
@@ -19,6 +20,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         testAutoRetry: #selector(testAutoRetry(_:)),
         refreshUsage: #selector(refreshUsage(_:)),
         toggleQuotaWidget: #selector(toggleQuotaWidget(_:)),
+        showNativeWidgetHelp: #selector(showNativeWidgetHelp(_:)),
         performUpdate: #selector(performUpdateAction(_:)),
         toggleAutomaticUpdates: #selector(settingsAutomaticUpdatesChanged(_:)),
         refreshNews: #selector(refreshUpdates(_:)),
@@ -94,6 +96,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         let model = makeDashboardModel()
         dashboard.updateUsage(model: model)
         syncQuotaWidget(model: model)
+        syncNativeWidget()
     }
 
     private func refreshUpdaterInterface() {
@@ -135,13 +138,20 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         menu.addItem(.separator())
         addUsageItems(to: menu)
         let widgetItem = NSMenuItem(
-            title: text("Codex Status Rail", "Codex 状态轨道"),
+            title: text("Floating Status Rail", "悬浮状态轨道"),
             action: #selector(toggleQuotaWidget(_:)),
             keyEquivalent: ""
         )
         widgetItem.target = self
         widgetItem.state = config.showQuotaWidget ? .on : .off
         menu.addItem(widgetItem)
+        let nativeWidgetItem = NSMenuItem(
+            title: text("Add macOS Widget…", "添加 macOS 小组件…"),
+            action: #selector(showNativeWidgetHelp(_:)),
+            keyEquivalent: ""
+        )
+        nativeWidgetItem.target = self
+        menu.addItem(nativeWidgetItem)
         menu.addItem(.separator())
 
         let retryItem = NSMenuItem(title: text("Auto Retry", "自动重试"), action: #selector(toggleAutoRetry(_:)), keyEquivalent: "")
@@ -239,6 +249,17 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         config.showQuotaWidget.toggle()
         configStore.save(config)
         refreshInterface()
+    }
+
+    @objc private func showNativeWidgetHelp(_ sender: Any?) {
+        let alert = NSAlert()
+        alert.messageText = text("Add the Codex Helper widget", "添加 Codex Helper 小组件")
+        alert.informativeText = text(
+            "Control-click an empty area of the desktop, choose Edit Widgets, search for Codex Helper, then drag the widget to the desktop or Notification Center. The floating Status Rail can be enabled separately.",
+            "在桌面空白处右键，选择“编辑小组件”，搜索 Codex Helper，再把它拖到桌面或通知中心。悬浮状态轨道可以单独开启。"
+        )
+        alert.addButton(withTitle: text("Got It", "知道了"))
+        alert.runModal()
     }
 
     @objc private func openAccessibilitySettings(_ sender: Any?) {
@@ -530,6 +551,32 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
             quotaWidget.show(model: model)
         } else {
             quotaWidget.hide()
+        }
+    }
+
+    private func syncNativeWidget() {
+        guard let snapshot = usageService.snapshot else { return }
+        let windows = snapshot.limits.flatMap { limit in
+            [limit.primary, limit.secondary].enumerated().compactMap { index, window -> WidgetQuotaWindow? in
+                guard let window else { return nil }
+                return WidgetQuotaWindow(
+                    id: "\(limit.id)-\(index == 0 ? "primary" : "secondary")",
+                    name: limit.name,
+                    planType: limit.planType,
+                    remainingPercent: window.remainingPercent,
+                    windowDurationMins: window.windowDurationMins,
+                    resetsAt: window.resetsAt
+                )
+            }
+        }
+        guard !windows.isEmpty else { return }
+        let widgetSnapshot = WidgetQuotaSnapshot(
+            windows: windows,
+            resetCredits: snapshot.resetCredits,
+            fetchedAt: snapshot.fetchedAt
+        )
+        if WidgetSnapshotStore.save(widgetSnapshot) {
+            WidgetCenter.shared.reloadTimelines(ofKind: codexHelperWidgetKind)
         }
     }
 

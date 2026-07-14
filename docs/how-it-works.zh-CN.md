@@ -48,7 +48,9 @@ flowchart LR
 
 Codex Helper 会先验证随 App 提供的 `codex` 可执行文件属于 OpenAI 签名团队，再启动 `codex app-server --stdio`，完成 JSON-RPC 初始化后调用 `account/rateLimits/read`。这个本地常驻子进程每 5 分钟刷新；由于 `account/rateLimits/updated` 是稀疏通知，收到通知后会重新读取完整快照，不会用缺省字段覆盖现有数据。内存中只保留额度比例、窗口长度、重置时间、套餐标签和重置次数；认证仍完全由 Codex 管理。
 
-主要额度的剩余比例默认常驻在菜单栏图标旁。App Server 返回 `usedPercent`；Codex Helper 会计算 `100 - usedPercent` 并限制在 0–100%，显示方向与 Codex 官方界面一致。点击一次即可在一级菜单中看到全部额度周期。重新设计的主页面和可选横向状态轨道共用同一份额度快照、重置倒计时与颜色分级：50–100% 为蓝绿色，10–50% 为琥珀色，低于 10% 为粉红色。背景始终保持中性，只有圆环和小型状态提示变色。无边框状态轨道会浮在普通窗口之上，可以出现在所有桌面空间、自由拖动，并提供刷新、打开主页面和隐藏操作。显示状态仅保存在本机，默认关闭。
+主要额度的剩余比例默认常驻在菜单栏图标旁。App Server 返回 `usedPercent`；Codex Helper 会计算 `100 - usedPercent` 并限制在 0–100%，显示方向与 Codex 官方界面一致。点击一次即可在一级菜单中看到全部额度周期。
+
+额度可以通过两种桌面方式呈现：真正的 WidgetKit macOS 小组件，以及可选的悬浮状态轨道。两者可以独立使用，共用同一份额度快照、重置倒计时与颜色分级：50–100% 为蓝绿色，10–50% 为琥珀色，低于 10% 为粉红色。主 App 会把最小化后的额度快照写入团队 App Group `PCJ84YD7HQ.com.makerjackie.codex-helper`，小组件只读取这份数据，不直接连接 Codex。悬浮状态轨道默认关闭，可以自由拖动并显示在所有桌面空间。
 
 ## 签名更新
 
@@ -60,7 +62,7 @@ Codex Helper 会先验证随 App 提供的 `codex` 可执行文件属于 OpenAI 
 - 不读取项目文件。
 - 不保存对话内容。
 - 持久化状态只包含日志游标、任务 ID、时间戳和重试次数。
-- 辅助功能权限只用于向 Codex 进程定向发送重试键盘操作，并且发送前会确认 Codex 位于前台。
+- 辅助功能权限只用于向 Codex 进程定向发送重试键盘操作，并且发送前会确认 Codex 位于前台。App 启动、额度刷新与自动化测试都不会主动弹出授权请求；只有用户点击授权入口时才请求。
 - GitHub Release 版本使用 Developer ID 签名、Hardened Runtime、Apple 公证和 stapled ticket；通过 `install.sh` 构建的源码版本使用本机 ad-hoc 签名。
 
 ## 已知限制

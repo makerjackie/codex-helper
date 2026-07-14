@@ -48,7 +48,9 @@ The What's New menu fetches the public Codex changelog RSS and OpenAI News RSS, 
 
 Codex Helper verifies the OpenAI signing team of the bundled `codex` executable, starts `codex app-server --stdio`, completes the JSON-RPC initialization handshake, and calls `account/rateLimits/read`. The long-lived local subprocess refreshes every five minutes. Because `account/rateLimits/updated` notifications are sparse, each notification triggers a full refetch instead of replacing the cached snapshot. Only quota percentages, window durations, reset timestamps, plan labels, and reset-credit counts are retained in memory; authentication remains inside Codex.
 
-The primary remaining percentage is shown beside the menu bar icon by default. The App Server reports `usedPercent`; Codex Helper presents `100 - usedPercent`, clamped to 0–100%, to match the direction used by Codex itself. Clicking once reveals every available quota window directly in the first-level menu. The redesigned dashboard and optional horizontal Status Rail use the same snapshot, reset countdown, and color bands: teal at 50–100%, amber at 10–50%, and pink-red below 10%. Their backgrounds remain neutral; only the circular gauge and small status accents change color. The borderless Status Rail stays above normal windows, can join every Space, is draggable, and provides refresh, dashboard, and hide controls. Its visibility is stored locally and defaults to off.
+The primary remaining percentage is shown beside the menu bar icon by default. The App Server reports `usedPercent`; Codex Helper presents `100 - usedPercent`, clamped to 0–100%, to match the direction used by Codex itself. Clicking once reveals every available quota window directly in the first-level menu.
+
+Quota has two independent desktop presentations: a native WidgetKit macOS widget and the optional floating Status Rail. Both use the same snapshot, reset countdowns, and color bands: teal at 50–100%, amber at 10–50%, and pink-red below 10%. The main app writes a minimized snapshot to the team App Group `PCJ84YD7HQ.com.makerjackie.codex-helper`; the widget only reads that data and never connects to Codex directly. The draggable Status Rail can join every Space and defaults to off.
 
 ## Signed updates
 
@@ -60,7 +62,7 @@ The updater checks `makerjackie/codex-helper` GitHub Releases at most once per d
 - No project files are read.
 - No conversation content is retained.
 - Persistent state contains log cursor offsets, task IDs, timestamps, and retry counters.
-- Accessibility permission is used only to synthesize retry keystrokes targeted to the Codex process, after confirming Codex is frontmost.
+- Accessibility permission is used only to synthesize retry keystrokes targeted to the Codex process, after confirming Codex is frontmost. Launch, quota refresh, and automated tests never prompt for permission; only an explicit user action does.
 - GitHub Release builds use Developer ID signing, hardened runtime, Apple notarization, and stapled tickets. Source builds installed with `install.sh` use local ad-hoc signing.
 
 ## Limitations

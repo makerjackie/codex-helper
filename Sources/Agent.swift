@@ -176,7 +176,6 @@ final class AutoRetryAgent {
         guard !isRunning else { return }
         isRunning = true
         loadState()
-        requestAccessibilityPermission()
         pollTimer = Timer.scheduledTimer(withTimeInterval: 1, repeats: true) { [weak self] _ in
             self?.poll()
         }
@@ -197,6 +196,10 @@ final class AutoRetryAgent {
     }
 
     func promptForAccessibility() {
+        guard ProcessInfo.processInfo.environment["CODEX_HELPER_DISABLE_ACCESSIBILITY_PROMPTS"] != "1" else {
+            logger.write("Accessibility prompt suppressed by test environment")
+            return
+        }
         requestAccessibilityPermission()
     }
 
@@ -599,6 +602,24 @@ func runSelfTest() -> Int32 {
     let decodedHiddenQuotaConfig = try? JSONDecoder().decode(AgentConfig.self, from: hiddenQuotaConfig)
     let widgetConfig = #"{"showQuotaWidget":true}"#.data(using: .utf8)!
     let decodedWidgetConfig = try? JSONDecoder().decode(AgentConfig.self, from: widgetConfig)
+    let widgetSnapshot = WidgetQuotaSnapshot(
+        windows: [
+            WidgetQuotaWindow(
+                id: "codex-primary",
+                name: "Codex",
+                planType: "pro",
+                remainingPercent: 77,
+                windowDurationMins: 10080,
+                resetsAt: Date(timeIntervalSince1970: 1784508971)
+            )
+        ],
+        resetCredits: 1,
+        fetchedAt: Date(timeIntervalSince1970: 0)
+    )
+    let widgetSnapshotRoundTrip = try? JSONDecoder().decode(
+        WidgetQuotaSnapshot.self,
+        from: JSONEncoder().encode(widgetSnapshot)
+    )
     let index = """
     {"id":"019f59b0-c8ec-7cf1-88be-4e6247938d01","thread_name":"Older name","updated_at":"2026-07-13T04:00:00.000000Z"}
     {"id":"019f59b0-c8ec-7cf1-88be-4e6247938d01","thread_name":"Latest name","updated_at":"2026-07-13T04:16:59.439270Z"}
@@ -631,6 +652,7 @@ func runSelfTest() -> Int32 {
           decodedConfig == AgentConfig(language: "zh"),
           decodedHiddenQuotaConfig?.showQuotaInMenuBar == false,
           decodedWidgetConfig?.showQuotaWidget == true,
+          widgetSnapshotRoundTrip == widgetSnapshot,
           threads.count == 2,
           threads[0].name == "Another task",
           threads[1].name == "Latest name",
