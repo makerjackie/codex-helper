@@ -10,6 +10,7 @@ xcrun swiftc -warnings-as-errors \
   -target "$ARCHITECTURE-apple-macosx13.0" \
   "$ROOT"/Sources/*.swift \
   -framework AppKit \
+  -framework SwiftUI \
   -framework ApplicationServices \
   -framework ServiceManagement \
   -framework WidgetKit \
