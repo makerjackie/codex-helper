@@ -1,0 +1,149 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=1080, initial-scale=1" />
+  <style>
+    * { box-sizing: border-box; }
+    html, body { margin: 0; width: 1080px; height: 1440px; overflow: hidden; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "PingFang SC", sans-serif;
+      color: #f7f4ed;
+      background: #0d1413;
+    }
+    .poster {
+      position: relative;
+      width: 1080px;
+      height: 1440px;
+      overflow: hidden;
+      background:
+        radial-gradient(circle at 83% 12%, rgba(248,151,28,.22), transparent 26%),
+        radial-gradient(circle at 18% 78%, rgba(17,161,136,.22), transparent 33%),
+        linear-gradient(155deg, #101817 0%, #111b19 42%, #1d211b 100%);
+    }
+    .orbit {
+      position: absolute;
+      width: 740px;
+      height: 740px;
+      right: -320px;
+      top: -280px;
+      border: 1px solid rgba(245,170,60,.25);
+      border-radius: 50%;
+    }
+    .orbit::before,
+    .orbit::after {
+      content: "";
+      position: absolute;
+      border: 1px solid rgba(37,184,155,.17);
+      border-radius: 50%;
+    }
+    .orbit::before { inset: 78px; }
+    .orbit::after { inset: 156px; }
+    .header {
+      position: absolute;
+      left: 76px;
+      right: 76px;
+      top: 74px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .brand { font-size: 22px; font-weight: 720; letter-spacing: 3.6px; }
+    .dot { display: inline-block; width: 11px; height: 11px; margin-right: 13px; border-radius: 50%; background: #20c685; box-shadow: 0 0 20px rgba(32,198,133,.75); }
+    .status { color: rgba(247,244,237,.5); font-size: 19px; font-weight: 620; }
+    .headline {
+      position: absolute;
+      left: 73px;
+      top: 166px;
+      width: 900px;
+      margin: 0;
+      font-size: 74px;
+      line-height: 1.08;
+      letter-spacing: -4px;
+      font-weight: 740;
+    }
+    .headline em { font-style: normal; color: #f3a12e; }
+    .intro {
+      position: absolute;
+      left: 78px;
+      top: 352px;
+      margin: 0;
+      color: rgba(247,244,237,.61);
+      font-size: 28px;
+      line-height: 1.5;
+      font-weight: 520;
+    }
+    .stage {
+      position: absolute;
+      left: 58px;
+      top: 470px;
+      width: 964px;
+      height: 680px;
+    }
+    .rail {
+      position: absolute;
+      width: 850px;
+      height: auto;
+      filter: drop-shadow(0 26px 46px rgba(0,0,0,.38));
+    }
+    .rail.light { left: 0; top: 0; }
+    .rail.dark { right: 0; top: 302px; }
+    .label {
+      position: absolute;
+      display: flex;
+      align-items: center;
+      gap: 11px;
+      font-size: 20px;
+      font-weight: 680;
+      letter-spacing: 1px;
+      color: rgba(247,244,237,.72);
+    }
+    .label::before { content: ""; width: 8px; height: 8px; border-radius: 50%; background: #f3a12e; }
+    .label.light { right: 14px; top: 228px; }
+    .label.dark { left: 12px; top: 528px; }
+    .label.dark::before { background: #1ab293; }
+    .rule {
+      position: absolute;
+      left: 77px;
+      right: 77px;
+      top: 1170px;
+      height: 1px;
+      background: linear-gradient(90deg, rgba(255,255,255,.04), rgba(255,255,255,.24), rgba(255,255,255,.04));
+    }
+    .footer {
+      position: absolute;
+      left: 77px;
+      right: 77px;
+      top: 1218px;
+      display: flex;
+      align-items: end;
+      justify-content: space-between;
+    }
+    .footer-main { font-size: 31px; line-height: 1.4; font-weight: 650; }
+    .footer-main span { color: #25c39e; }
+    .footer-side { text-align: right; color: rgba(247,244,237,.52); font-size: 20px; line-height: 1.65; font-weight: 560; }
+  </style>
+</head>
+<body>
+  <main class="poster">
+    <div class="orbit"></div>
+    <header class="header">
+      <div class="brand"><span class="dot"></span>CODEX HELPER</div>
+      <div class="status">macOS · v0.7.1</div>
+    </header>
+    <h1 class="headline">浅色，深色。<br><em>都安静地守着 Codex。</em></h1>
+    <p class="intro">额度变化时，颜色会轻轻提醒你。<br>需要时，自动重试接手未完成的任务。</p>
+    <section class="stage">
+      <img class="rail light" src="rail-light.png" alt="浅色悬浮轨道" />
+      <div class="label light">浅色模式</div>
+      <img class="rail dark" src="rail-dark.png" alt="深色悬浮轨道" />
+      <div class="label dark">深色模式</div>
+    </section>
+    <div class="rule"></div>
+    <footer class="footer">
+      <div class="footer-main">看见剩余，放心继续。<br><span>Codex Helper for Mac</span></div>
+      <div class="footer-side">菜单栏 · 悬浮轨道 · 小组件<br>免费开源 · MIT License</div>
+    </footer>
+  </main>
+</body>
+</html>
