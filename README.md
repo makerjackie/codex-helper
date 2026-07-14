@@ -3,7 +3,9 @@
 [English](README.en.md) · [工作原理](docs/how-it-works.zh-CN.md) · [MIT License](LICENSE)
 
 <p align="center">
-  <img src="assets/app-icon-source.png" width="150" alt="Codex Helper 图标">
+  <a href="assets/marketing-v0.7.1/codex-helper-promo-zh.mp4">
+    <img src="assets/marketing-v0.7.1/codex-helper-poster-zh.webp" width="620" alt="Codex Helper 宣传图">
+  </a>
 </p>
 
 一个开源的 macOS Codex 辅助工具。直接查看剩余额度，并在模型满载时安全续跑原任务。
@@ -17,9 +19,7 @@
 - 模型满载后自动定位并重试原 Codex 任务
 - 中英文、自动更新、Codex 官方动态与文档入口
 
-<p align="center">
-  <img src="assets/status-rail-v0.6.0.webp" width="520" alt="Codex Helper 悬浮状态轨道">
-</p>
+点击上方宣传图可查看 15 秒产品短片（无配音，轻音乐）。
 
 ## 安装
 

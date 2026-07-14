@@ -1,0 +1,156 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=1080, initial-scale=1" />
+  <style>
+    * { box-sizing: border-box; }
+    html, body { margin: 0; width: 1080px; height: 1440px; overflow: hidden; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "PingFang SC", sans-serif;
+      color: #17201f;
+      background: #f6f3eb;
+    }
+    .poster {
+      position: relative;
+      width: 1080px;
+      height: 1440px;
+      overflow: hidden;
+      background: linear-gradient(180deg, rgba(255,254,248,.96) 0%, rgba(248,247,240,.92) 48%, rgba(234,243,239,.88) 100%);
+    }
+    .art {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      opacity: .34;
+      filter: saturate(.78) contrast(.9);
+    }
+    .wash {
+      position: absolute;
+      inset: 0;
+      background:
+        radial-gradient(circle at 86% 24%, rgba(255,168,53,.15), transparent 26%),
+        linear-gradient(180deg, rgba(250,249,242,.42), rgba(250,249,242,.05) 50%, rgba(245,248,245,.3));
+    }
+    .topline {
+      position: absolute;
+      top: 70px;
+      left: 74px;
+      right: 74px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-size: 22px;
+      font-weight: 700;
+      letter-spacing: 4.2px;
+    }
+    .brand { display: flex; align-items: center; gap: 16px; }
+    .brand-mark {
+      width: 16px;
+      height: 16px;
+      border-radius: 50%;
+      background: #159e89;
+      box-shadow: 0 0 0 8px rgba(21,158,137,.10);
+    }
+    .platform { color: rgba(23,32,31,.52); font-size: 19px; letter-spacing: 2px; }
+    .headline {
+      position: absolute;
+      top: 160px;
+      left: 72px;
+      width: 900px;
+      font-size: 86px;
+      line-height: 1.06;
+      letter-spacing: -5px;
+      font-weight: 760;
+    }
+    .headline .accent { color: #d9770b; }
+    .subline {
+      position: absolute;
+      top: 368px;
+      left: 77px;
+      font-size: 30px;
+      font-weight: 560;
+      color: rgba(23,32,31,.66);
+      letter-spacing: .5px;
+    }
+    .rail-wrap {
+      position: absolute;
+      top: 462px;
+      left: 76px;
+      width: 928px;
+      height: 407px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      filter: drop-shadow(0 30px 40px rgba(20,42,37,.16));
+    }
+    .rail { width: 910px; height: auto; display: block; }
+    .dash-frame {
+      position: absolute;
+      left: 108px;
+      top: 870px;
+      width: 864px;
+      height: 484px;
+      overflow: hidden;
+      border-radius: 35px 35px 0 0;
+      border: 1px solid rgba(27,45,41,.13);
+      box-shadow: 0 35px 80px rgba(15,48,42,.18);
+      background: #f5f7f6;
+    }
+    .dashboard {
+      width: 940px;
+      height: auto;
+      display: block;
+      margin-left: -38px;
+      margin-top: -14px;
+    }
+    .feature-strip {
+      position: absolute;
+      left: 80px;
+      bottom: 42px;
+      display: flex;
+      gap: 14px;
+    }
+    .feature {
+      padding: 13px 19px;
+      border: 1px solid rgba(20,35,33,.14);
+      border-radius: 999px;
+      background: rgba(255,255,250,.82);
+      color: #263331;
+      font-size: 20px;
+      font-weight: 650;
+      box-shadow: 0 8px 24px rgba(33,59,53,.08);
+    }
+    .version {
+      position: absolute;
+      right: 77px;
+      bottom: 57px;
+      font-size: 20px;
+      color: rgba(23,32,31,.56);
+      font-weight: 650;
+    }
+  </style>
+</head>
+<body>
+  <main class="poster">
+    <img class="art" src="abstract-orbits.png" alt="" />
+    <div class="wash"></div>
+    <header class="topline">
+      <div class="brand"><span class="brand-mark"></span><span>CODEX HELPER</span></div>
+      <span class="platform">FOR MAC</span>
+    </header>
+    <h1 class="headline">Codex 的状态<br><span class="accent">一眼就够。</span></h1>
+    <p class="subline">剩余额度 · 自动重试 · 更新动态</p>
+    <div class="rail-wrap"><img class="rail" src="rail-light.png" alt="Codex Helper 悬浮轨道" /></div>
+    <div class="dash-frame"><img class="dashboard" src="dashboard-light.png" alt="Codex Helper 主界面" /></div>
+    <div class="feature-strip">
+      <span class="feature">菜单栏</span>
+      <span class="feature">悬浮轨道</span>
+      <span class="feature">macOS 小组件</span>
+    </div>
+    <div class="version">开源 · 免费 · MIT</div>
+  </main>
+</body>
+</html>
