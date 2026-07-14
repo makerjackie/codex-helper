@@ -1,0 +1,58 @@
+name: CodexHelper
+options:
+  minimumXcodeGenVersion: 2.44.1
+  deploymentTarget:
+    macOS: "13.0"
+settings:
+  base:
+    DEVELOPMENT_TEAM: PCJ84YD7HQ
+    MACOSX_DEPLOYMENT_TARGET: "13.0"
+    SWIFT_VERSION: "5.0"
+    ENABLE_HARDENED_RUNTIME: YES
+targets:
+  CodexHelper:
+    type: application
+    platform: macOS
+    sources:
+      - path: Sources
+      - path: Resources/AppIcon.icns
+        buildPhase: resources
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.makerjackie.codex-helper
+        PRODUCT_NAME: CodexHelper
+        INFOPLIST_FILE: Resources/Info.plist
+        GENERATE_INFOPLIST_FILE: NO
+        CODE_SIGN_ENTITLEMENTS: Resources/CodexHelper.entitlements
+        CODE_SIGN_STYLE: Manual
+        ENABLE_APP_SANDBOX: NO
+    dependencies:
+      - target: CodexHelperWidget
+        embed: true
+  CodexHelperWidget:
+    type: app-extension
+    platform: macOS
+    sources:
+      - path: WidgetExtension/CodexHelperWidget.swift
+      - path: Sources/WidgetSnapshot.swift
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.makerjackie.codex-helper.widget
+        PRODUCT_NAME: CodexHelperWidget
+        INFOPLIST_FILE: WidgetExtension/Info.plist
+        GENERATE_INFOPLIST_FILE: NO
+        CODE_SIGN_ENTITLEMENTS: WidgetExtension/CodexHelperWidget.entitlements
+        CODE_SIGN_STYLE: Manual
+        ENABLE_APP_SANDBOX: YES
+        APPLICATION_EXTENSION_API_ONLY: YES
+        SKIP_INSTALL: YES
+schemes:
+  CodexHelper:
+    build:
+      targets:
+        CodexHelper: all
+        CodexHelperWidget: all
+    run:
+      config: Debug
+    archive:
+      config: Release

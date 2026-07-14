@@ -1,0 +1,492 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 77;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		05DDB60D0420E59B28C7504E /* CodexHelperWidget.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3A95368CE905C9B02FC2ED33 /* CodexHelperWidget.swift */; };
+		3F19073BF5ED2D82A0379D47 /* WidgetSnapshot.swift in Sources */ = {isa = PBXBuildFile; fileRef = B6B2F593D30B90A7CEB8AE43 /* WidgetSnapshot.swift */; };
+		569A8D776E1D496063816162 /* Config.swift in Sources */ = {isa = PBXBuildFile; fileRef = CCE7E2C0CD198F4A7397604A /* Config.swift */; };
+		57DD7772163F29A5156276A3 /* QuotaVisuals.swift in Sources */ = {isa = PBXBuildFile; fileRef = BB6460A841DAE81DCC9BA877 /* QuotaVisuals.swift */; };
+		719B44C5AF4D6976D6B914DD /* AppIcon.icns in Resources */ = {isa = PBXBuildFile; fileRef = 8401EEF3C4DBE21A5AD03F88 /* AppIcon.icns */; };
+		83CD860A774180665918DEDF /* Updater.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4135D4947A76EF1FF5CABEA4 /* Updater.swift */; };
+		8E47D5834006B1D1C83E0728 /* UsageService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5BBCE5FD4046E4951F66D91E /* UsageService.swift */; };
+		97C59C1837857359C7721234 /* CodexHelperWidget.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 24F8418C2F805D575FE0FBB2 /* CodexHelperWidget.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+		A53FDBEE1F17E6A3CECBE417 /* CodexUpdates.swift in Sources */ = {isa = PBXBuildFile; fileRef = F20A8C0EAF1D15280005E685 /* CodexUpdates.swift */; };
+		AAEC6F2242B8FF20C398D0EE /* Agent.swift in Sources */ = {isa = PBXBuildFile; fileRef = CE9E8C27B10C323132510F90 /* Agent.swift */; };
+		BD2E9EF659189296DBAC8AEA /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = F0AFB7C4710F04FC24262B9C /* AppDelegate.swift */; };
+		D5704D21F73B312A65B78743 /* Dashboard.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5CD72B414385AF8942EA8B50 /* Dashboard.swift */; };
+		DD0A73B2E635CA7CAB543ED8 /* QuotaWidget.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7BBEB27993D7F914DF81D83A /* QuotaWidget.swift */; };
+		E9B8DF8892297EFA4DAE45BA /* WidgetSnapshot.swift in Sources */ = {isa = PBXBuildFile; fileRef = B6B2F593D30B90A7CEB8AE43 /* WidgetSnapshot.swift */; };
+		F686EF43037A36152EDB2FFF /* main.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7BD3E0375A5D4EB5797F827B /* main.swift */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXContainerItemProxy section */
+		82DE90BB0DC408A0112770F0 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 183DED8F0A0EE2DFF9491072 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = F6F197AAF7B62CC6FB92971A;
+			remoteInfo = CodexHelperWidget;
+		};
+/* End PBXContainerItemProxy section */
+
+/* Begin PBXCopyFilesBuildPhase section */
+		138D34AEE798A6CF3ABC0B74 /* Embed Foundation Extensions */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 13;
+			files = (
+				97C59C1837857359C7721234 /* CodexHelperWidget.appex in Embed Foundation Extensions */,
+			);
+			name = "Embed Foundation Extensions";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXCopyFilesBuildPhase section */
+
+/* Begin PBXFileReference section */
+		24F8418C2F805D575FE0FBB2 /* CodexHelperWidget.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = CodexHelperWidget.appex; sourceTree = BUILT_PRODUCTS_DIR; };
+		3A95368CE905C9B02FC2ED33 /* CodexHelperWidget.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CodexHelperWidget.swift; sourceTree = "<group>"; };
+		4135D4947A76EF1FF5CABEA4 /* Updater.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Updater.swift; sourceTree = "<group>"; };
+		5BBCE5FD4046E4951F66D91E /* UsageService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UsageService.swift; sourceTree = "<group>"; };
+		5CD72B414385AF8942EA8B50 /* Dashboard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Dashboard.swift; sourceTree = "<group>"; };
+		7BBEB27993D7F914DF81D83A /* QuotaWidget.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QuotaWidget.swift; sourceTree = "<group>"; };
+		7BD3E0375A5D4EB5797F827B /* main.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = main.swift; sourceTree = "<group>"; };
+		8401EEF3C4DBE21A5AD03F88 /* AppIcon.icns */ = {isa = PBXFileReference; lastKnownFileType = image.icns; path = AppIcon.icns; sourceTree = "<group>"; };
+		B6B2F593D30B90A7CEB8AE43 /* WidgetSnapshot.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WidgetSnapshot.swift; sourceTree = "<group>"; };
+		BB6460A841DAE81DCC9BA877 /* QuotaVisuals.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QuotaVisuals.swift; sourceTree = "<group>"; };
+		CCE7E2C0CD198F4A7397604A /* Config.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Config.swift; sourceTree = "<group>"; };
+		CE9E8C27B10C323132510F90 /* Agent.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Agent.swift; sourceTree = "<group>"; };
+		D7E8EF99B3658E49274B19DD /* CodexHelper.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = CodexHelper.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		F0AFB7C4710F04FC24262B9C /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
+		F20A8C0EAF1D15280005E685 /* CodexUpdates.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CodexUpdates.swift; sourceTree = "<group>"; };
+/* End PBXFileReference section */
+
+/* Begin PBXGroup section */
+		68CA7CF17AD80D08C323E93D /* WidgetExtension */ = {
+			isa = PBXGroup;
+			children = (
+				3A95368CE905C9B02FC2ED33 /* CodexHelperWidget.swift */,
+			);
+			path = WidgetExtension;
+			sourceTree = "<group>";
+		};
+		72B709439D7A471A75487A74 /* Resources */ = {
+			isa = PBXGroup;
+			children = (
+				8401EEF3C4DBE21A5AD03F88 /* AppIcon.icns */,
+			);
+			path = Resources;
+			sourceTree = "<group>";
+		};
+		9967B0EEB2A253A54BB9FE14 = {
+			isa = PBXGroup;
+			children = (
+				72B709439D7A471A75487A74 /* Resources */,
+				EB9E0A1C5137068E2B0E2D8B /* Sources */,
+				68CA7CF17AD80D08C323E93D /* WidgetExtension */,
+				B057CD078BB655B4CA0A9E3A /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+		B057CD078BB655B4CA0A9E3A /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				D7E8EF99B3658E49274B19DD /* CodexHelper.app */,
+				24F8418C2F805D575FE0FBB2 /* CodexHelperWidget.appex */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		EB9E0A1C5137068E2B0E2D8B /* Sources */ = {
+			isa = PBXGroup;
+			children = (
+				CE9E8C27B10C323132510F90 /* Agent.swift */,
+				F0AFB7C4710F04FC24262B9C /* AppDelegate.swift */,
+				F20A8C0EAF1D15280005E685 /* CodexUpdates.swift */,
+				CCE7E2C0CD198F4A7397604A /* Config.swift */,
+				5CD72B414385AF8942EA8B50 /* Dashboard.swift */,
+				7BD3E0375A5D4EB5797F827B /* main.swift */,
+				BB6460A841DAE81DCC9BA877 /* QuotaVisuals.swift */,
+				7BBEB27993D7F914DF81D83A /* QuotaWidget.swift */,
+				4135D4947A76EF1FF5CABEA4 /* Updater.swift */,
+				5BBCE5FD4046E4951F66D91E /* UsageService.swift */,
+				B6B2F593D30B90A7CEB8AE43 /* WidgetSnapshot.swift */,
+			);
+			path = Sources;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		6D0C8BB10656508755A8F7E5 /* CodexHelper */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = DF638CF823588535E214EFDC /* Build configuration list for PBXNativeTarget "CodexHelper" */;
+			buildPhases = (
+				0BA400CC06508A2E737C14D4 /* Sources */,
+				E3F567888ED8332C5E8CA6B6 /* Resources */,
+				138D34AEE798A6CF3ABC0B74 /* Embed Foundation Extensions */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				EAA42F848DDFFD3BC6BBA080 /* PBXTargetDependency */,
+			);
+			name = CodexHelper;
+			packageProductDependencies = (
+			);
+			productName = CodexHelper;
+			productReference = D7E8EF99B3658E49274B19DD /* CodexHelper.app */;
+			productType = "com.apple.product-type.application";
+		};
+		F6F197AAF7B62CC6FB92971A /* CodexHelperWidget */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = A84E75F7800E712179DD960F /* Build configuration list for PBXNativeTarget "CodexHelperWidget" */;
+			buildPhases = (
+				342CDFA1AF7DAE87A46F3F84 /* Sources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = CodexHelperWidget;
+			packageProductDependencies = (
+			);
+			productName = CodexHelperWidget;
+			productReference = 24F8418C2F805D575FE0FBB2 /* CodexHelperWidget.appex */;
+			productType = "com.apple.product-type.app-extension";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		183DED8F0A0EE2DFF9491072 /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				BuildIndependentTargetsInParallel = YES;
+				LastUpgradeCheck = 1430;
+				TargetAttributes = {
+					6D0C8BB10656508755A8F7E5 = {
+						DevelopmentTeam = PCJ84YD7HQ;
+						ProvisioningStyle = Manual;
+					};
+					F6F197AAF7B62CC6FB92971A = {
+						DevelopmentTeam = PCJ84YD7HQ;
+						ProvisioningStyle = Manual;
+					};
+				};
+			};
+			buildConfigurationList = BE95895DA94A01DC6714CAC8 /* Build configuration list for PBXProject "CodexHelper" */;
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				Base,
+				en,
+			);
+			mainGroup = 9967B0EEB2A253A54BB9FE14;
+			minimizedProjectReferenceProxies = 1;
+			preferredProjectObjectVersion = 77;
+			productRefGroup = B057CD078BB655B4CA0A9E3A /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				6D0C8BB10656508755A8F7E5 /* CodexHelper */,
+				F6F197AAF7B62CC6FB92971A /* CodexHelperWidget */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		E3F567888ED8332C5E8CA6B6 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				719B44C5AF4D6976D6B914DD /* AppIcon.icns in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		0BA400CC06508A2E737C14D4 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				AAEC6F2242B8FF20C398D0EE /* Agent.swift in Sources */,
+				BD2E9EF659189296DBAC8AEA /* AppDelegate.swift in Sources */,
+				A53FDBEE1F17E6A3CECBE417 /* CodexUpdates.swift in Sources */,
+				569A8D776E1D496063816162 /* Config.swift in Sources */,
+				D5704D21F73B312A65B78743 /* Dashboard.swift in Sources */,
+				57DD7772163F29A5156276A3 /* QuotaVisuals.swift in Sources */,
+				DD0A73B2E635CA7CAB543ED8 /* QuotaWidget.swift in Sources */,
+				83CD860A774180665918DEDF /* Updater.swift in Sources */,
+				8E47D5834006B1D1C83E0728 /* UsageService.swift in Sources */,
+				E9B8DF8892297EFA4DAE45BA /* WidgetSnapshot.swift in Sources */,
+				F686EF43037A36152EDB2FFF /* main.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		342CDFA1AF7DAE87A46F3F84 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				05DDB60D0420E59B28C7504E /* CodexHelperWidget.swift in Sources */,
+				3F19073BF5ED2D82A0379D47 /* WidgetSnapshot.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		EAA42F848DDFFD3BC6BBA080 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = F6F197AAF7B62CC6FB92971A /* CodexHelperWidget */;
+			targetProxy = 82DE90BB0DC408A0112770F0 /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
+
+/* Begin XCBuildConfiguration section */
+		1CC62AC33DDCFD7FB0792801 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_ENTITLEMENTS = Resources/CodexHelper.entitlements;
+				CODE_SIGN_STYLE = Manual;
+				COMBINE_HIDPI_IMAGES = YES;
+				ENABLE_APP_SANDBOX = NO;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = Resources/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = "com.makerjackie.codex-helper";
+				PRODUCT_NAME = CodexHelper;
+				SDKROOT = macosx;
+			};
+			name = Release;
+		};
+		5D2B853452B20FD72B5C303B /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_ENTITLEMENTS = Resources/CodexHelper.entitlements;
+				CODE_SIGN_STYLE = Manual;
+				COMBINE_HIDPI_IMAGES = YES;
+				ENABLE_APP_SANDBOX = NO;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = Resources/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = "com.makerjackie.codex-helper";
+				PRODUCT_NAME = CodexHelper;
+				SDKROOT = macosx;
+			};
+			name = Debug;
+		};
+		6D78AEE49BAA4CF32AF59320 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				DEVELOPMENT_TEAM = PCJ84YD7HQ;
+				ENABLE_HARDENED_RUNTIME = YES;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"$(inherited)",
+					"DEBUG=1",
+				);
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				MACOSX_DEPLOYMENT_TARGET = 13.0;
+				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
+				MTL_FAST_MATH = YES;
+				ONLY_ACTIVE_ARCH = YES;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = macosx;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+				SWIFT_VERSION = 5.0;
+			};
+			name = Debug;
+		};
+		8BD21DB993625B09C3D95FA8 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				APPLICATION_EXTENSION_API_ONLY = YES;
+				CODE_SIGN_ENTITLEMENTS = WidgetExtension/CodexHelperWidget.entitlements;
+				CODE_SIGN_STYLE = Manual;
+				COMBINE_HIDPI_IMAGES = YES;
+				ENABLE_APP_SANDBOX = YES;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = WidgetExtension/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+					"@executable_path/../../../../Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = "com.makerjackie.codex-helper.widget";
+				PRODUCT_NAME = CodexHelperWidget;
+				SDKROOT = macosx;
+				SKIP_INSTALL = YES;
+			};
+			name = Release;
+		};
+		9795E9374D12964CEF6BB772 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				DEVELOPMENT_TEAM = PCJ84YD7HQ;
+				ENABLE_HARDENED_RUNTIME = YES;
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				MACOSX_DEPLOYMENT_TARGET = 13.0;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				MTL_FAST_MATH = YES;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = macosx;
+				SWIFT_COMPILATION_MODE = wholemodule;
+				SWIFT_OPTIMIZATION_LEVEL = "-O";
+				SWIFT_VERSION = 5.0;
+			};
+			name = Release;
+		};
+		C6D00C468CBCA432362608D4 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				APPLICATION_EXTENSION_API_ONLY = YES;
+				CODE_SIGN_ENTITLEMENTS = WidgetExtension/CodexHelperWidget.entitlements;
+				CODE_SIGN_STYLE = Manual;
+				COMBINE_HIDPI_IMAGES = YES;
+				ENABLE_APP_SANDBOX = YES;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = WidgetExtension/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+					"@executable_path/../../../../Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = "com.makerjackie.codex-helper.widget";
+				PRODUCT_NAME = CodexHelperWidget;
+				SDKROOT = macosx;
+				SKIP_INSTALL = YES;
+			};
+			name = Debug;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		A84E75F7800E712179DD960F /* Build configuration list for PBXNativeTarget "CodexHelperWidget" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				C6D00C468CBCA432362608D4 /* Debug */,
+				8BD21DB993625B09C3D95FA8 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		BE95895DA94A01DC6714CAC8 /* Build configuration list for PBXProject "CodexHelper" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				6D78AEE49BAA4CF32AF59320 /* Debug */,
+				9795E9374D12964CEF6BB772 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		DF638CF823588535E214EFDC /* Build configuration list for PBXNativeTarget "CodexHelper" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				5D2B853452B20FD72B5C303B /* Debug */,
+				1CC62AC33DDCFD7FB0792801 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+/* End XCConfigurationList section */
+	};
+	rootObject = 183DED8F0A0EE2DFF9491072 /* Project object */;
+}
