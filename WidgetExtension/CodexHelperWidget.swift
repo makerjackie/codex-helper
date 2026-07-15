@@ -57,12 +57,16 @@ private struct SmallQuotaView: View {
                 QuotaRing(percent: primary?.remainingPercent, size: 58)
                 VStack(alignment: .leading, spacing: 3) {
                     Text(primary.map { "\(Int($0.remainingPercent.rounded()))%" } ?? "—")
-                        .font(.system(size: 25, weight: .semibold, design: .rounded))
+                        .font(.title3.bold())
                         .monospacedDigit()
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.72)
+                        .allowsTightening(true)
                     Text(isChinese ? "剩余" : "remaining")
-                        .font(.caption2)
+                        .font(.caption)
                         .foregroundStyle(.secondary)
                 }
+                .layoutPriority(1)
             }
             Spacer(minLength: 0)
             ResetLine(window: primary)
@@ -76,19 +80,23 @@ private struct MediumQuotaView: View {
     let snapshot: WidgetQuotaSnapshot?
 
     var body: some View {
-        HStack(spacing: 20) {
-            VStack(alignment: .leading, spacing: 12) {
+        HStack(spacing: 14) {
+            VStack(alignment: .leading, spacing: 10) {
                 WidgetHeader(window: primary)
-                HStack(spacing: 12) {
-                    QuotaRing(percent: primary?.remainingPercent, size: 70)
+                HStack(spacing: 10) {
+                    QuotaRing(percent: primary?.remainingPercent, size: 60)
                     VStack(alignment: .leading, spacing: 3) {
                         Text(primary.map { "\(Int($0.remainingPercent.rounded()))%" } ?? "—")
-                            .font(.system(size: 31, weight: .semibold, design: .rounded))
+                            .font(.title2.bold())
                             .monospacedDigit()
+                            .lineLimit(1)
+                            .minimumScaleFactor(0.65)
+                            .allowsTightening(true)
                         Text(isChinese ? "剩余额度" : "remaining")
                             .font(.caption)
                             .foregroundStyle(.secondary)
                     }
+                    .layoutPriority(1)
                 }
                 ResetLine(window: primary)
             }
@@ -173,7 +181,7 @@ private struct ResetLine: View {
         HStack(spacing: 5) {
             Image(systemName: "clock")
             if let reset = window?.resetsAt, reset > Date() {
-                Text(reset, style: .relative)
+                Text(resetDescription(until: reset))
             } else {
                 Text(isChinese ? "等待重置时间" : "Reset time unavailable")
             }
@@ -181,6 +189,23 @@ private struct ResetLine: View {
         .font(.caption2)
         .foregroundStyle(.secondary)
         .lineLimit(1)
+        .minimumScaleFactor(0.72)
+    }
+
+    private func resetDescription(until reset: Date) -> String {
+        let totalMinutes = max(1, Int(reset.timeIntervalSinceNow / 60))
+        let days = totalMinutes / (24 * 60)
+        let hours = (totalMinutes % (24 * 60)) / 60
+        let minutes = totalMinutes % 60
+
+        if isChinese {
+            if days > 0 { return "\(days)天\(hours)小时后" }
+            if hours > 0 { return "\(hours)小时\(minutes)分钟后" }
+            return "\(minutes)分钟后"
+        }
+        if days > 0 { return "in \(days)d \(hours)h" }
+        if hours > 0 { return "in \(hours)h \(minutes)m" }
+        return "in \(minutes)m"
     }
 }
 

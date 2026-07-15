@@ -602,6 +602,8 @@ func runSelfTest() -> Int32 {
     let decodedHiddenQuotaConfig = try? JSONDecoder().decode(AgentConfig.self, from: hiddenQuotaConfig)
     let widgetConfig = #"{"showQuotaWidget":true}"#.data(using: .utf8)!
     let decodedWidgetConfig = try? JSONDecoder().decode(AgentConfig.self, from: widgetConfig)
+    let sparkConfig = #"{"showSparkQuota":true}"#.data(using: .utf8)!
+    let decodedSparkConfig = try? JSONDecoder().decode(AgentConfig.self, from: sparkConfig)
     let widgetSnapshot = WidgetQuotaSnapshot(
         windows: [
             WidgetQuotaWindow(
@@ -652,6 +654,7 @@ func runSelfTest() -> Int32 {
           decodedConfig == AgentConfig(language: "zh"),
           decodedHiddenQuotaConfig?.showQuotaInMenuBar == false,
           decodedWidgetConfig?.showQuotaWidget == true,
+          decodedSparkConfig?.showSparkQuota == true,
           widgetSnapshotRoundTrip == widgetSnapshot,
           threads.count == 2,
           threads[0].name == "Another task",
@@ -672,6 +675,8 @@ func runSelfTest() -> Int32 {
           sparseUsage?.limits.first?.id == "spark",
           sparseUsage?.limits.first?.primary?.windowDurationMins == nil,
           sparseUsage?.limits.first?.primary?.resetsAt == nil,
+          visibleUsageLimits(sparseUsage?.limits ?? [], showSparkQuota: false).isEmpty,
+          visibleUsageLimits(sparseUsage?.limits ?? [], showSparkQuota: true).count == 1,
           isVersion("0.3.0", newerThan: "0.2.9"),
           !isVersion("0.2.0", newerThan: "0.2.0"),
           checksumMatches(data: checksumData, checksumText: "\(checksum)  Codex-Helper.dmg"),

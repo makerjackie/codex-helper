@@ -37,6 +37,7 @@ struct DashboardModel {
     let launchAtLogin: Bool
     let showQuotaInMenuBar: Bool
     let showQuotaWidget: Bool
+    let showSparkQuota: Bool
     let languageIndex: Int
 }
 
@@ -55,6 +56,7 @@ struct DashboardActions {
     let openLink: Selector
     let toggleLaunchAtLogin: Selector
     let toggleMenuBarQuota: Selector
+    let toggleSparkQuota: Selector
     let changeLanguage: Selector
     let openLoginItems: Selector
     let openLogs: Selector

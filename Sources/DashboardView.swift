@@ -173,6 +173,11 @@ struct DashboardView: View {
                 isOn: toggleBinding(model.showQuotaInMenuBar, selector: dispatcher.actions.toggleMenuBarQuota)
             )
             .toggleStyle(.checkbox)
+            Toggle(
+                model.isChinese ? "显示 Spark 额度" : "Show Spark quota",
+                isOn: toggleBinding(model.showSparkQuota, selector: dispatcher.actions.toggleSparkQuota)
+            )
+            .toggleStyle(.checkbox)
 
             HStack {
                 Text(model.isChinese ? "界面与续跑语言" : "Interface and retry language")

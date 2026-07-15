@@ -19,6 +19,15 @@ struct CodexUsageLimit: Codable, Equatable {
     let secondary: CodexUsageWindow?
 }
 
+func visibleUsageLimits(_ limits: [CodexUsageLimit], showSparkQuota: Bool) -> [CodexUsageLimit] {
+    guard !showSparkQuota else { return limits }
+    return limits.filter { limit in
+        let id = limit.id.lowercased()
+        let name = limit.name.lowercased()
+        return id != "spark" && !name.contains("spark")
+    }
+}
+
 struct CodexUsageSnapshot: Codable, Equatable {
     let limits: [CodexUsageLimit]
     let resetCredits: Int
