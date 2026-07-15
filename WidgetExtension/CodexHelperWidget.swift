@@ -69,7 +69,11 @@ private struct SmallQuotaView: View {
                 .layoutPriority(1)
             }
             Spacer(minLength: 0)
-            ResetLine(window: primary)
+            HStack(spacing: 8) {
+                ResetLine(window: primary)
+                Spacer(minLength: 2)
+                ResetCreditsLine(count: snapshot?.resetCredits ?? 0, compact: true)
+            }
         }
     }
 
@@ -114,12 +118,7 @@ private struct MediumQuotaView: View {
                         .foregroundStyle(.secondary)
                 }
                 Spacer(minLength: 0)
-                HStack(spacing: 5) {
-                    Image(systemName: "arrow.counterclockwise.circle")
-                    Text(isChinese ? "可重置 \(snapshot?.resetCredits ?? 0) 次" : "\(snapshot?.resetCredits ?? 0) reset credits")
-                }
-                .font(.caption2)
-                .foregroundStyle(.secondary)
+                ResetCreditsLine(count: snapshot?.resetCredits ?? 0, compact: false)
             }
             .frame(maxWidth: .infinity, alignment: .leading)
         }
@@ -206,6 +205,35 @@ private struct ResetLine: View {
         if days > 0 { return "in \(days)d \(hours)h" }
         if hours > 0 { return "in \(hours)h \(minutes)m" }
         return "in \(minutes)m"
+    }
+}
+
+private struct ResetCreditsLine: View {
+    let count: Int
+    let compact: Bool
+
+    var body: some View {
+        Label {
+            Text(label)
+        } icon: {
+            Image(systemName: "arrow.counterclockwise.circle")
+        }
+        .font(.caption2)
+        .foregroundStyle(.secondary)
+        .lineLimit(1)
+        .minimumScaleFactor(0.72)
+        .accessibilityLabel(accessibilityLabel)
+    }
+
+    private var label: String {
+        if compact {
+            return isChinese ? "\(count)次" : "\(count)x"
+        }
+        return isChinese ? "可重置 \(count) 次" : "\(count) reset credits"
+    }
+
+    private var accessibilityLabel: String {
+        isChinese ? "可重置 \(count) 次" : "\(count) reset credits available"
     }
 }
 
