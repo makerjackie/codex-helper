@@ -12,7 +12,7 @@ An open-source macOS companion for Codex. See remaining quota at a glance and sa
 
 ## Features
 
-- Native macOS widget, menu bar quota, and an optional floating Status Rail
+- Native macOS widget, menu bar quota overview, and an optional floating Status Rail
 - Remaining quota, reset countdowns, and color-coded quota levels
 - Guarded Auto Retry for the affected Codex task
 - English and Chinese UI, signed updates, official Codex news and docs
