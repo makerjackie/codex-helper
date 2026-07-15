@@ -6,13 +6,12 @@ Requirements:
 
 - Xcode and Xcode Command Line Tools
 - a valid Developer ID Application identity
-- a `notarytool` keychain profile
+- `asc` authenticated with `asc auth login`
 - GitHub CLI for publishing the finished files
 
 ```bash
 SIGNING_IDENTITY="Developer ID Application: Company Name (TEAMID)" \
-NOTARY_PROFILE="your-notary-profile" \
-VERSION="0.7.1" \
+VERSION="0.7.2" \
 ./scripts/package-release.sh
 ```
 
@@ -21,9 +20,9 @@ The script verifies the app signature, submits and staples the app, builds and s
 Publish the resulting DMG and checksum:
 
 ```bash
-gh release create v0.7.1 \
-  dist/Codex-Helper-0.7.1.dmg \
-  dist/Codex-Helper-0.7.1.dmg.sha256 \
-  --title "Codex Helper v0.7.1" \
+gh release create v0.7.2 \
+  dist/Codex-Helper-0.7.2.dmg \
+  dist/Codex-Helper-0.7.2.dmg.sha256 \
+  --title "Codex Helper v0.7.2" \
   --generate-notes
 ```

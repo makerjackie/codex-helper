@@ -4,5 +4,6 @@
   "language": "auto",
   "launchAtLogin": true,
   "showQuotaInMenuBar": true,
-  "showQuotaWidget": false
+  "showQuotaWidget": false,
+  "showSparkQuota": false
 }

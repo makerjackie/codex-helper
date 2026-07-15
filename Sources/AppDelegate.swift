@@ -27,6 +27,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         openLink: #selector(openDashboardLink(_:)),
         toggleLaunchAtLogin: #selector(settingsLaunchChanged(_:)),
         toggleMenuBarQuota: #selector(settingsShowQuotaChanged(_:)),
+        toggleSparkQuota: #selector(settingsSparkQuotaChanged(_:)),
         changeLanguage: #selector(settingsLanguageChanged(_:)),
         openLoginItems: #selector(openLoginItemsSettings(_:)),
         openLogs: #selector(openLogFolder(_:))
@@ -393,6 +394,14 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         refreshInterface()
     }
 
+    @objc private func settingsSparkQuotaChanged(_ sender: NSButton) {
+        var config = configStore.load()
+        config.showSparkQuota = sender.state == .on
+        configStore.save(config)
+        refreshInterface()
+        syncNativeWidget()
+    }
+
     @objc private func settingsLanguageChanged(_ sender: NSPopUpButton) {
         let values = ["auto", "en", "zh"]
         guard values.indices.contains(sender.indexOfSelectedItem) else { return }
@@ -503,7 +512,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         menu.addItem(disabledMenuItem(headingTitle))
 
         if let snapshot = usageService.snapshot {
-            for limit in snapshot.limits {
+            let limits = visibleUsageLimits(
+                snapshot.limits,
+                showSparkQuota: configStore.load().showSparkQuota
+            )
+            for limit in limits {
                 for window in [limit.primary, limit.secondary].compactMap({ $0 }) {
                     let duration = window.windowDurationMins.map(usageWindowLabel) ?? text("current window", "当前周期")
                     let reset = window.resetsAt.map(formatResetDate)
@@ -541,8 +554,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     }
 
     private var primaryRemainingPercent: Double? {
-        let window = usageService.snapshot?.limits.first(where: { $0.id == "codex" })?.primary
-            ?? usageService.snapshot?.limits.first?.primary
+        guard let snapshot = usageService.snapshot else { return nil }
+        let limits = visibleUsageLimits(
+            snapshot.limits,
+            showSparkQuota: configStore.load().showSparkQuota
+        )
+        let window = limits.first(where: { $0.id == "codex" })?.primary
+            ?? limits.first?.primary
         return window?.remainingPercent
     }
 
@@ -556,7 +574,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
 
     private func syncNativeWidget() {
         guard let snapshot = usageService.snapshot else { return }
-        let windows = snapshot.limits.flatMap { limit in
+        let limits = visibleUsageLimits(
+            snapshot.limits,
+            showSparkQuota: configStore.load().showSparkQuota
+        )
+        let windows = limits.flatMap { limit in
             [limit.primary, limit.secondary].enumerated().compactMap { index, window -> WidgetQuotaWindow? in
                 guard let window else { return nil }
                 return WidgetQuotaWindow(
@@ -569,7 +591,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
                 )
             }
         }
-        guard !windows.isEmpty else { return }
         let widgetSnapshot = WidgetQuotaSnapshot(
             windows: windows,
             resetCredits: snapshot.resetCredits,
@@ -605,7 +626,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
             )
         }
 
-        let usageRows = makeDashboardUsageRows()
+        let usageRows = makeDashboardUsageRows(showSparkQuota: config.showSparkQuota)
         let usageState: String
         if let snapshot = usageService.snapshot {
             switch usageService.status {
@@ -657,13 +678,14 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
             launchAtLogin: loginItemEnabled,
             showQuotaInMenuBar: config.showQuotaInMenuBar,
             showQuotaWidget: config.showQuotaWidget,
+            showSparkQuota: config.showSparkQuota,
             languageIndex: languageValues.firstIndex(of: config.language) ?? 0
         )
     }
 
-    private func makeDashboardUsageRows() -> [DashboardUsageRow] {
+    private func makeDashboardUsageRows(showSparkQuota: Bool) -> [DashboardUsageRow] {
         guard let snapshot = usageService.snapshot else { return [] }
-        return snapshot.limits.flatMap { limit in
+        return visibleUsageLimits(snapshot.limits, showSparkQuota: showSparkQuota).flatMap { limit in
             [limit.primary, limit.secondary].compactMap { window -> DashboardUsageRow? in
                 guard let window else { return nil }
                 let duration = window.windowDurationMins.map(usageWindowLabel) ?? text("Current window", "当前周期")
