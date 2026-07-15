@@ -671,6 +671,16 @@ func runSelfTest() -> Int32 {
           quotaLevel(for: 10) == .attention,
           quotaLevel(for: 9.9) == .critical,
           quotaLevel(for: nil) == .unavailable,
+          formatCompactResetDistance(
+              until: Date(timeIntervalSince1970: 100_000),
+              from: Date(timeIntervalSince1970: 10_000),
+              isChinese: true
+          ) == "1天1时",
+          formatResetCountdown(
+              until: Date(timeIntervalSince1970: 13_661),
+              from: Date(timeIntervalSince1970: 10_000),
+              isChinese: true
+          ) == "01:01:01",
           usage?.resetCredits == 1,
           sparseUsage?.limits.first?.id == "spark",
           sparseUsage?.limits.first?.primary?.windowDurationMins == nil,

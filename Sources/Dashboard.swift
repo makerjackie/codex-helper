@@ -29,6 +29,10 @@ struct DashboardModel {
     let usageState: String
     let usageRows: [DashboardUsageRow]
     let usageFooter: String?
+    let primaryResetAt: Date?
+    let resetCredits: Int?
+    let usageUpdatedAt: Date?
+    let usageIsRefreshing: Bool
     let updatesState: String
     let updateActionTitle: String
     let updateActionEnabled: Bool
@@ -60,6 +64,7 @@ struct DashboardActions {
     let changeLanguage: Selector
     let openLoginItems: Selector
     let openLogs: Selector
+    let quitApp: Selector
 }
 
 struct DashboardActionDispatcher {

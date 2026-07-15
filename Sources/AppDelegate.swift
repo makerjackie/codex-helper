@@ -12,6 +12,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     private let usageService = CodexUsageService()
     private lazy var updater = UpdateService(supportURL: configStore.supportURL)
     private var statusItem: NSStatusItem!
+    private var statusContextMenu = NSMenu()
+    private var statusRefreshTimer: Timer?
     private lazy var dashboardActions = DashboardActions(
         target: self,
         showDashboard: #selector(showDashboard(_:)),
@@ -30,14 +32,17 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         toggleSparkQuota: #selector(settingsSparkQuotaChanged(_:)),
         changeLanguage: #selector(settingsLanguageChanged(_:)),
         openLoginItems: #selector(openLoginItemsSettings(_:)),
-        openLogs: #selector(openLogFolder(_:))
+        openLogs: #selector(openLogFolder(_:)),
+        quitApp: #selector(quitApp(_:))
     )
     private lazy var dashboard = DashboardController(actions: dashboardActions)
     private lazy var quotaWidget = QuotaWidgetController(actions: dashboardActions)
+    private lazy var menuBarPanel = MenuBarPanelController(actions: dashboardActions)
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         NSApp.setActivationPolicy(.accessory)
         configureStatusItem()
+        startStatusRefreshTimer()
         syncLaunchAtLoginOnFirstRun()
         if configStore.load().autoRetryEnabled {
             agent.start()
@@ -55,6 +60,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         agent.stop()
         usageService.stop()
         updater.stop()
+        statusRefreshTimer?.invalidate()
     }
 
     func applicationDidBecomeActive(_ notification: Notification) {
@@ -79,6 +85,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         if let button = statusItem.button {
             button.image = NSImage(systemSymbolName: "arrow.triangle.2.circlepath.circle.fill", accessibilityDescription: "Codex Helper")
             button.imagePosition = .imageLeading
+            button.target = self
+            button.action = #selector(statusItemClicked(_:))
+            button.sendAction(on: [.leftMouseUp, .rightMouseUp])
         }
         refreshInterface()
     }
@@ -89,6 +98,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         let model = makeDashboardModel()
         dashboard.update(model: model)
         syncQuotaWidget(model: model)
+        menuBarPanel.update(model: model)
     }
 
     private func refreshUsageInterface() {
@@ -97,24 +107,50 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         let model = makeDashboardModel()
         dashboard.updateUsage(model: model)
         syncQuotaWidget(model: model)
+        menuBarPanel.update(model: model)
         syncNativeWidget()
     }
 
     private func refreshUpdaterInterface() {
         rebuildMenu()
         dashboard.updateAppUpdates(model: makeDashboardModel())
+        menuBarPanel.update(model: makeDashboardModel())
     }
 
     private func refreshNewsInterface() {
         rebuildMenu()
         dashboard.updateNews(model: makeDashboardModel())
+        menuBarPanel.update(model: makeDashboardModel())
     }
 
     private func rebuildMenu() {
         let menu = NSMenu()
         menu.delegate = self
         populateMenu(menu)
-        statusItem.menu = menu
+        statusContextMenu = menu
+    }
+
+    @objc private func statusItemClicked(_ sender: NSStatusBarButton) {
+        if NSApp.currentEvent?.type == .rightMouseUp {
+            menuBarPanel.close()
+            statusContextMenu.popUp(
+                positioning: nil,
+                at: NSPoint(x: sender.bounds.minX, y: sender.bounds.minY - 4),
+                in: sender
+            )
+        } else {
+            menuBarPanel.toggle(relativeTo: sender, model: makeDashboardModel())
+        }
+    }
+
+    private func startStatusRefreshTimer() {
+        let timer = Timer(timeInterval: 30, repeats: true) { [weak self] _ in
+            guard let self else { return }
+            updateStatusItem()
+            menuBarPanel.update(model: makeDashboardModel())
+        }
+        RunLoop.main.add(timer, forMode: .common)
+        statusRefreshTimer = timer
     }
 
     private func populateMenu(_ menu: NSMenu) {
@@ -479,12 +515,23 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         } else {
             staleMarker = ""
         }
-        button.title = config.showQuotaInMenuBar ? remainingPercent.map { "  \(formatQuotaPercent($0))\(staleMarker)" } ?? "" : ""
+        if config.showQuotaInMenuBar, let remainingPercent {
+            var status = formatQuotaPercent(remainingPercent) + staleMarker
+            if let resetsAt = primaryUsageWindow?.resetsAt {
+                status += " · " + formatCompactResetDistance(
+                    until: resetsAt,
+                    isChinese: configStore.isChinese()
+                )
+            }
+            button.title = "  \(status)"
+        } else {
+            button.title = ""
+        }
         if let remainingPercent {
             if staleMarker.isEmpty {
                 button.toolTip = text(
-                    "Codex quota: \(formatQuotaPercent(remainingPercent)) left",
-                    "Codex 额度：剩余 \(formatQuotaPercent(remainingPercent))"
+                    "Codex quota: \(formatQuotaPercent(remainingPercent)) left · Click for overview · Right-click for full menu",
+                    "Codex 额度：剩余 \(formatQuotaPercent(remainingPercent)) · 点击查看概览 · 右键打开完整菜单"
                 )
             } else {
                 button.toolTip = text(
@@ -554,14 +601,17 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     }
 
     private var primaryRemainingPercent: Double? {
+        primaryUsageWindow?.remainingPercent
+    }
+
+    private var primaryUsageWindow: CodexUsageWindow? {
         guard let snapshot = usageService.snapshot else { return nil }
         let limits = visibleUsageLimits(
             snapshot.limits,
             showSparkQuota: configStore.load().showSparkQuota
         )
-        let window = limits.first(where: { $0.id == "codex" })?.primary
+        return limits.first(where: { $0.id == "codex" })?.primary
             ?? limits.first?.primary
-        return window?.remainingPercent
     }
 
     private func syncQuotaWidget(model: DashboardModel) {
@@ -653,6 +703,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
                 "可用重置次数：\($0.resetCredits) · 更新于 \(formatResetDate($0.fetchedAt))"
             )
         }
+        let usageIsRefreshing: Bool
+        if case .loading = usageService.status {
+            usageIsRefreshing = true
+        } else {
+            usageIsRefreshing = false
+        }
         let update = updatePresentation()
         let languageValues = ["auto", "en", "zh"]
         let version = Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "dev"
@@ -670,6 +726,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
             usageState: usageState,
             usageRows: usageRows,
             usageFooter: usageFooter,
+            primaryResetAt: primaryUsageWindow?.resetsAt,
+            resetCredits: usageService.snapshot?.resetCredits,
+            usageUpdatedAt: usageService.snapshot?.fetchedAt,
+            usageIsRefreshing: usageIsRefreshing,
             updatesState: update.status,
             updateActionTitle: update.title,
             updateActionEnabled: update.enabled,
