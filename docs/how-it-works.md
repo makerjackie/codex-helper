@@ -20,7 +20,7 @@ flowchart LR
 
 ## Detection
 
-The native Swift agent tails `~/.codex/log/codex-tui.log`. It looks for the exact capacity message and extracts the UUID from `thread_id=...`. The first launch starts at end-of-file, so old failures are not replayed.
+The native Swift agent reads new `codex_core::session::turn` records from Codex Desktop's current `~/.codex/logs_*.sqlite` event database. It looks for the exact capacity message and uses the record's task UUID. The first launch starts at the current database high-water mark, so old failures are not replayed. The legacy `~/.codex/log/codex-tui.log` tail remains as a compatibility fallback for older Codex builds.
 
 The task ID must also exist in `~/.codex/session_index.jsonl`. This deliberately excludes hidden subagent sessions.
 
@@ -61,7 +61,7 @@ The updater checks `makerjackie/codex-helper` GitHub Releases at most once per d
 - No backend service or telemetry. Network requests go directly to official OpenAI feeds and the project's GitHub Releases API.
 - No project files are read.
 - No conversation content is retained.
-- Persistent state contains log cursor offsets, task IDs, timestamps, and retry counters.
+- Persistent state contains event cursors, task IDs, timestamps, and retry counters.
 - Accessibility permission is used only to synthesize retry keystrokes targeted to the Codex process, after confirming Codex is frontmost. Launch, quota refresh, and automated tests never prompt for permission; only an explicit user action does.
 - GitHub Release builds use Developer ID signing, hardened runtime, Apple notarization, and stapled tickets. Source builds installed with `install.sh` use local ad-hoc signing.
 
