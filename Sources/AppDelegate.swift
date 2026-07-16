@@ -41,6 +41,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         NSApp.setActivationPolicy(.accessory)
+        agent.onActivityChange = { [weak self] in self?.refreshInterface() }
         configureStatusItem()
         startStatusRefreshTimer()
         syncLaunchAtLoginOnFirstRun()
@@ -167,7 +168,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         } else if !agent.accessibilityGranted {
             statusTitle = text("Status: Accessibility required", "状态：需要辅助功能权限")
         } else {
-            statusTitle = text("Status: Watching Codex", "状态：正在监听 Codex")
+            statusTitle = autoRetryStatus().title
         }
         let status = NSMenuItem(title: statusTitle, action: nil, keyEquivalent: "")
         status.isEnabled = false
@@ -370,29 +371,32 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
             return
         }
 
-        let threads = agent.recentVisibleThreads()
+        let threads = agent.recentVisibleThreads(limit: 2_000)
         guard !threads.isEmpty else {
             showError(text("No recent visible Codex tasks were found.", "没有找到最近的可见 Codex 任务。"))
             return
         }
 
-        let popup = NSPopUpButton(frame: NSRect(x: 0, y: 0, width: 430, height: 28))
-        for thread in threads {
-            popup.addItem(withTitle: "\(thread.name) — \(thread.id.prefix(8))")
-        }
+        let titles = threads.map { "\($0.name) — \($0.id.prefix(8))" }
+        let taskPicker = NSComboBox(frame: NSRect(x: 0, y: 0, width: 430, height: 28))
+        taskPicker.addItems(withObjectValues: titles)
+        taskPicker.numberOfVisibleItems = 14
+        taskPicker.completes = true
+        taskPicker.selectItem(at: 0)
+        taskPicker.setAccessibilityLabel(text("Codex task", "Codex 任务"))
 
         let alert = NSAlert()
         alert.messageText = text("Test Auto Retry end to end", "端到端测试自动重试")
         alert.informativeText = text(
-            "Choose a task. Codex Helper will open it and submit one clearly marked test message after 3 seconds. This verifies task routing, Accessibility control, text entry, and submission without waiting for a real capacity error.",
-            "选择一个任务。3 秒后 Codex Helper 会打开它并提交一条明确标记的测试消息，无需等待真实满载错误，即可验证任务定位、辅助功能控制、文字输入和提交。"
+            "Search or choose any task. Codex Helper will open it and submit one clearly marked test message after 3 seconds. This verifies task routing, Accessibility control, text entry, and submission without waiting for a real capacity error.",
+            "搜索或选择任意任务。3 秒后 Codex Helper 会打开它并提交一条明确标记的测试消息，无需等待真实满载错误，即可验证任务定位、辅助功能控制、文字输入和提交。"
         )
-        alert.accessoryView = popup
+        alert.accessoryView = taskPicker
         alert.addButton(withTitle: text("Run Test", "运行测试"))
         alert.addButton(withTitle: text("Cancel", "取消"))
         guard alert.runModal() == .alertFirstButtonReturn else { return }
 
-        let selectedIndex = popup.indexOfSelectedItem
+        let selectedIndex = titles.firstIndex(of: taskPicker.stringValue) ?? taskPicker.indexOfSelectedItem
         guard threads.indices.contains(selectedIndex), agent.runEndToEndTest(threadID: threads[selectedIndex].id, completion: { [weak self] success, reason in
             self?.showEndToEndTestResult(success: success, reason: reason)
         }) else {
@@ -485,7 +489,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
                 "codexNotFrontmost": ("Codex could not become the frontmost app.", "Codex 无法切换到前台。"),
                 "focusChanged": ("Focus left Codex before submission.", "提交前焦点离开了 Codex。"),
                 "targetNotSelected": ("The selected task could not be verified in the Codex sidebar.", "无法在 Codex 侧边栏确认所选任务。"),
-                "composerNotEmpty": ("The focused Codex composer was not empty or could not be verified.", "Codex 当前输入框不是空白状态，或无法验证。"),
+                "composerNotEmpty": ("The target Codex composer contains a draft, so Helper left it untouched.", "目标 Codex 输入框中已有草稿，Helper 为避免覆盖而没有提交。"),
+                "composerNotFound": ("The target Codex composer could not be found.", "无法定位目标 Codex 输入框。"),
+                "composerWriteFailed": ("The target Codex composer could not be controlled.", "无法控制目标 Codex 输入框。"),
                 "targetNotConfirmed": ("The test prompt was not confirmed in the selected task.", "无法确认测试消息已进入所选任务。")
             ]
             let explanation = explanations[reason] ?? ("The test was cancelled before submission.", "测试在提交前已取消。")
@@ -669,11 +675,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
                 "额度和更新仍可使用，但授权前自动重试无法在 Codex 中提交续跑消息。"
             )
         } else {
-            statusTitle = text("Watching Codex", "正在监听 Codex")
-            statusDetail = text(
-                "Auto Retry is ready for selected-model capacity interruptions.",
-                "自动重试已准备好处理所选模型满载中断。"
-            )
+            let retryStatus = autoRetryStatus()
+            statusTitle = retryStatus.title
+            statusDetail = retryStatus.detail
         }
 
         let usageRows = makeDashboardUsageRows(showSparkQuota: config.showSparkQuota)
@@ -741,6 +745,59 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
             showSparkQuota: config.showSparkQuota,
             languageIndex: languageValues.firstIndex(of: config.language) ?? 0
         )
+    }
+
+    private func autoRetryStatus() -> (title: String, detail: String) {
+        switch agent.activity {
+        case .watching:
+            return (
+                text("Watching Codex", "正在监听 Codex"),
+                text(
+                    "Auto Retry is ready for selected-model capacity interruptions.",
+                    "自动重试已准备好处理所选模型满载中断。"
+                )
+            )
+        case let .scheduled(attempt, delaySeconds):
+            return (
+                text("Capacity error detected", "已识别容量错误"),
+                text(
+                    "Retry \(attempt) will run in \(delaySeconds) seconds.",
+                    "第 \(attempt) 次重试将在 \(delaySeconds) 秒后执行。"
+                )
+            )
+        case let .submitted(attempt):
+            return (
+                text("Auto Retry submitted", "已提交自动重试"),
+                text(
+                    "Retry \(attempt) was sent to the affected Codex task.",
+                    "已向发生中断的 Codex 任务发送第 \(attempt) 次续跑消息。"
+                )
+            )
+        case .pausedForDraft:
+            return (
+                text("Retry paused to protect a draft", "已识别，但为保护草稿暂停"),
+                text(
+                    "The target composer already contains text, so Helper did not overwrite it.",
+                    "目标输入框已有文字，Helper 没有覆盖现有草稿。"
+                )
+            )
+        case .submissionBlocked:
+            return (
+                text("Capacity error detected; submission blocked", "已识别容量错误，但提交受阻"),
+                text(
+                    "Helper could not safely locate or control the target composer. Open the log folder for details.",
+                    "Helper 无法安全定位或控制目标输入框，可打开日志文件夹查看原因。"
+                )
+            )
+        case .cancelledForNewActivity:
+            return (
+                text("Retry no longer needed", "重试已取消"),
+                text(
+                    "The target task received newer activity, so Helper avoided a duplicate submission.",
+                    "目标任务已有新活动，Helper 为避免重复提交而取消了重试。"
+                )
+            )
+        }
     }
 
     private func makeDashboardUsageRows(showSparkQuota: Bool) -> [DashboardUsageRow] {
