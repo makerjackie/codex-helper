@@ -27,7 +27,7 @@ private struct SessionIndexEntry: Decodable {
     }
 }
 
-func parseRecentThreads(_ data: Data, limit: Int = 12) -> [CodexThreadSummary] {
+func parseRecentThreads(_ data: Data, limit: Int = 2_000) -> [CodexThreadSummary] {
     guard let text = String(data: data, encoding: .utf8) else { return [] }
     let decoder = JSONDecoder()
     var seen = Set<String>()
@@ -44,6 +44,23 @@ func parseRecentThreads(_ data: Data, limit: Int = 12) -> [CodexThreadSummary] {
         if results.count == limit { break }
     }
     return results
+}
+
+private let codexComposerPlaceholders: Set<String> = [
+    "Ask for follow-up changes",
+    "Ask for follow up changes or @ to tag an agent",
+    "要求后续变更",
+    "要求提供后续变更或 @ 提及智能体",
+    "要求後續跟進變更",
+    "要求後續跟進變更或 @ 以標記代理程式"
+]
+
+func isCodexComposerEffectivelyEmpty(_ value: String) -> Bool {
+    let normalized = value
+        .replacingOccurrences(of: "\u{200B}", with: "")
+        .replacingOccurrences(of: "\u{00A0}", with: " ")
+        .trimmingCharacters(in: .whitespacesAndNewlines)
+    return normalized.isEmpty || codexComposerPlaceholders.contains(normalized)
 }
 
 private struct CursorState: Codable {
@@ -156,6 +173,14 @@ final class AutoRetryAgent {
     private var pollTimer: Timer?
     private var isRunning = false
 
+    var onActivityChange: (() -> Void)?
+    private(set) var activity: AutoRetryActivity = .watching {
+        didSet {
+            guard activity != oldValue else { return }
+            onActivityChange?()
+        }
+    }
+
     init(configStore: ConfigStore) {
         self.configStore = configStore
     }
@@ -163,7 +188,7 @@ final class AutoRetryAgent {
     var running: Bool { isRunning }
     var accessibilityGranted: Bool { AXIsProcessTrusted() }
 
-    func recentVisibleThreads(limit: Int = 12) -> [CodexThreadSummary] {
+    func recentVisibleThreads(limit: Int = 2_000) -> [CodexThreadSummary] {
         guard let data = try? Data(contentsOf: sessionIndexURL) else { return [] }
         return parseRecentThreads(data, limit: limit)
     }
@@ -199,6 +224,7 @@ final class AutoRetryAgent {
     func start() {
         guard !isRunning else { return }
         isRunning = true
+        activity = .watching
         loadState()
         pollTimer = Timer.scheduledTimer(withTimeInterval: 1, repeats: true) { [weak self] _ in
             self?.poll()
@@ -449,6 +475,7 @@ final class AutoRetryAgent {
 
         let baseline = sessionBaseline(for: failure.threadID)
         logger.write("scheduled retry \(attempt)/\(retryDelays.count) for \(failure.threadID) in \(Int(delay))s")
+        activity = .scheduled(attempt: attempt, delaySeconds: Int(delay))
 
         DispatchQueue.main.asyncAfter(deadline: .now() + delay) { [weak self] in
             guard let self,
@@ -458,6 +485,7 @@ final class AutoRetryAgent {
             }
             if self.hasNewActivity(since: baseline) {
                 self.logger.write("cancelled retry for \(failure.threadID): newer user or turn activity detected")
+                self.activity = .cancelledForNewActivity
                 self.state.retries.removeValue(forKey: failure.threadID)
                 self.saveState()
                 return
@@ -523,6 +551,7 @@ final class AutoRetryAgent {
             logDescription: "retry \(attempt)/\(retryDelays.count)",
             requiresAgentRunning: true,
             activityBaseline: activityBaseline,
+            retryAttempt: attempt,
             completion: nil
         )
     }
@@ -533,10 +562,12 @@ final class AutoRetryAgent {
         logDescription: String,
         requiresAgentRunning: Bool,
         activityBaseline: SessionBaseline,
+        retryAttempt: Int? = nil,
         completion: ((Bool, String) -> Void)?
     ) {
         guard AXIsProcessTrusted() else {
             logger.write("cannot submit \(logDescription) for \(threadID): Accessibility permission has not been granted")
+            if retryAttempt != nil { activity = .submissionBlocked }
             completion?(false, "accessibility")
             return
         }
@@ -552,6 +583,7 @@ final class AutoRetryAgent {
             guard let self, !requiresAgentRunning || self.isRunning else { return }
             guard let codex = NSRunningApplication.runningApplications(withBundleIdentifier: "com.openai.codex").first else {
                 self.logger.write("cancelled \(logDescription) for \(threadID): Codex is not running")
+                if retryAttempt != nil { self.activity = .submissionBlocked }
                 completion?(false, "codexNotRunning")
                 return
             }
@@ -561,11 +593,13 @@ final class AutoRetryAgent {
                 guard !requiresAgentRunning || self.isRunning else { return }
                 guard NSWorkspace.shared.frontmostApplication?.bundleIdentifier == "com.openai.codex" else {
                     self.logger.write("cancelled \(logDescription) for \(threadID): Codex did not become the frontmost app")
+                    if retryAttempt != nil { self.activity = .submissionBlocked }
                     completion?(false, "codexNotFrontmost")
                     return
                 }
                 guard !self.hasNewActivity(since: activityBaseline) else {
                     self.logger.write("cancelled \(logDescription) for \(threadID): newer user or turn activity detected")
+                    if retryAttempt != nil { self.activity = .cancelledForNewActivity }
                     completion?(false, "newActivity")
                     return
                 }
@@ -575,27 +609,46 @@ final class AutoRetryAgent {
                     guard (!requiresAgentRunning || self.isRunning),
                           NSWorkspace.shared.frontmostApplication?.bundleIdentifier == "com.openai.codex" else {
                         self.logger.write("cancelled \(logDescription) for \(threadID): focus left Codex before submission")
+                        if retryAttempt != nil { self.activity = .submissionBlocked }
                         completion?(false, "focusChanged")
                         return
                     }
-                    guard self.isTargetTaskSelected(threadID: threadID, processID: codex.processIdentifier) else {
+                    guard let targetWindow = self.targetTaskWindow(threadID: threadID, processID: codex.processIdentifier) else {
                         self.logger.write("cancelled \(logDescription) for \(threadID): target task selection could not be verified")
+                        if retryAttempt != nil { self.activity = .submissionBlocked }
                         completion?(false, "targetNotSelected")
                         return
                     }
-                    guard let composer = self.setPromptInFocusedEmptyComposer(prompt, processID: codex.processIdentifier) else {
-                        self.logger.write("cancelled \(logDescription) for \(threadID): focused control was not an empty Codex composer")
-                        completion?(false, "composerNotEmpty")
+                    let preparation = self.preparePrompt(prompt, in: targetWindow, processID: codex.processIdentifier)
+                    guard case let .ready(composer) = preparation else {
+                        switch preparation {
+                        case .notEmpty:
+                            self.logger.write("cancelled \(logDescription) for \(threadID): target composer contains a draft")
+                            if retryAttempt != nil { self.activity = .pausedForDraft }
+                            completion?(false, "composerNotEmpty")
+                        case .notFound:
+                            self.logger.write("cancelled \(logDescription) for \(threadID): target Codex composer was not found")
+                            if retryAttempt != nil { self.activity = .submissionBlocked }
+                            completion?(false, "composerNotFound")
+                        case .writeFailed:
+                            self.logger.write("cancelled \(logDescription) for \(threadID): target Codex composer could not be controlled")
+                            if retryAttempt != nil { self.activity = .submissionBlocked }
+                            completion?(false, "composerWriteFailed")
+                        case .ready:
+                            break
+                        }
                         return
                     }
                     guard !self.hasNewActivity(since: activityBaseline) else {
                         AXUIElementSetAttributeValue(composer, kAXValueAttribute as CFString, "" as CFString)
                         self.logger.write("cancelled \(logDescription) for \(threadID): newer activity appeared before submission")
+                        if retryAttempt != nil { self.activity = .cancelledForNewActivity }
                         completion?(false, "newActivity")
                         return
                     }
                     self.postKey(code: 36, to: codex.processIdentifier)
                     self.logger.write("submitted \(logDescription) for \(threadID)")
+                    if let retryAttempt { self.activity = .submitted(attempt: retryAttempt) }
 
                     DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
                         let confirmed = self.sessionContains(prompt, since: activityBaseline)
@@ -630,62 +683,132 @@ final class AutoRetryAgent {
         CGEvent(keyboardEventSource: nil, virtualKey: code, keyDown: false)?.postToPid(processID)
     }
 
-    private func setPromptInFocusedEmptyComposer(_ prompt: String, processID: pid_t) -> AXUIElement? {
-        let application = AXUIElementCreateApplication(processID)
-        AXUIElementSetAttributeValue(application, "AXEnhancedUserInterface" as CFString, kCFBooleanTrue)
-        var focusedValue: CFTypeRef?
-        guard AXUIElementCopyAttributeValue(application, kAXFocusedUIElementAttribute as CFString, &focusedValue) == .success,
-              let focused = axElement(from: focusedValue) else { return nil }
-
-        var roleValue: CFTypeRef?
-        guard AXUIElementCopyAttributeValue(focused, kAXRoleAttribute as CFString, &roleValue) == .success,
-              (roleValue as? String) == kAXTextAreaRole else { return nil }
-
-        var existingValue: CFTypeRef?
-        let valueResult = AXUIElementCopyAttributeValue(focused, kAXValueAttribute as CFString, &existingValue)
-        guard valueResult == .success, let existing = existingValue as? String else { return nil }
-        if !existing.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
-            return nil
-        }
-
-        guard AXUIElementSetAttributeValue(focused, kAXValueAttribute as CFString, prompt as CFString) == .success else {
-            return nil
-        }
-        var verificationValue: CFTypeRef?
-        guard AXUIElementCopyAttributeValue(focused, kAXValueAttribute as CFString, &verificationValue) == .success,
-              (verificationValue as? String) == prompt else {
-            AXUIElementSetAttributeValue(focused, kAXValueAttribute as CFString, "" as CFString)
-            return nil
-        }
-        return focused
+    private enum ComposerPreparation {
+        case ready(AXUIElement)
+        case notFound
+        case notEmpty
+        case writeFailed
     }
 
-    private func isTargetTaskSelected(threadID: String, processID: pid_t) -> Bool {
-        let threads = recentVisibleThreads(limit: 500)
+    private func preparePrompt(_ prompt: String, in targetWindow: AXUIElement, processID: pid_t) -> ComposerPreparation {
+        var visited = 0
+        guard let composer = findComposer(in: targetWindow, visited: &visited) else { return .notFound }
+
+        var existingValue: CFTypeRef?
+        guard AXUIElementCopyAttributeValue(composer, kAXValueAttribute as CFString, &existingValue) == .success,
+              let existing = existingValue as? String else { return .writeFailed }
+        guard isCodexComposerEffectivelyEmpty(existing) else { return .notEmpty }
+
+        let application = AXUIElementCreateApplication(processID)
+        guard AXUIElementSetAttributeValue(composer, kAXFocusedAttribute as CFString, kCFBooleanTrue) == .success,
+              AXUIElementSetAttributeValue(composer, kAXValueAttribute as CFString, prompt as CFString) == .success else {
+            return .writeFailed
+        }
+
+        var focusedValue: CFTypeRef?
+        var verificationValue: CFTypeRef?
+        let focusedResult = AXUIElementCopyAttributeValue(application, kAXFocusedUIElementAttribute as CFString, &focusedValue)
+        let valueResult = AXUIElementCopyAttributeValue(composer, kAXValueAttribute as CFString, &verificationValue)
+        guard focusedResult == .success,
+              let focused = axElement(from: focusedValue),
+              CFEqual(focused, composer),
+              valueResult == .success,
+              (verificationValue as? String) == prompt else {
+            AXUIElementSetAttributeValue(composer, kAXValueAttribute as CFString, "" as CFString)
+            return .writeFailed
+        }
+        return .ready(composer)
+    }
+
+    private func findComposer(in element: AXUIElement, visited: inout Int) -> AXUIElement? {
+        guard visited < 12_000 else { return nil }
+        visited += 1
+
+        var roleValue: CFTypeRef?
+        if AXUIElementCopyAttributeValue(element, kAXRoleAttribute as CFString, &roleValue) == .success,
+           (roleValue as? String) == kAXTextAreaRole,
+           hasComposerSurfaceAncestor(element) {
+            return element
+        }
+
+        var childrenValue: CFTypeRef?
+        guard AXUIElementCopyAttributeValue(element, kAXChildrenAttribute as CFString, &childrenValue) == .success,
+              let children = childrenValue as? [AXUIElement] else { return nil }
+        for child in children {
+            if let composer = findComposer(in: child, visited: &visited) { return composer }
+        }
+        return nil
+    }
+
+    private func hasComposerSurfaceAncestor(_ element: AXUIElement) -> Bool {
+        var current = element
+        for _ in 0..<8 {
+            var classesValue: CFTypeRef?
+            if AXUIElementCopyAttributeValue(current, "AXDOMClassList" as CFString, &classesValue) == .success,
+               let classes = classesValue as? [String],
+               classes.contains("composer-surface-chrome") {
+                return true
+            }
+            var parentValue: CFTypeRef?
+            guard AXUIElementCopyAttributeValue(current, kAXParentAttribute as CFString, &parentValue) == .success,
+                  let parent = axElement(from: parentValue) else { return false }
+            current = parent
+        }
+        return false
+    }
+
+    private func targetTaskWindow(threadID: String, processID: pid_t) -> AXUIElement? {
+        let threads = recentVisibleThreads(limit: 2_000)
         guard let target = threads.first(where: { $0.id == threadID }),
-              threads.filter({ $0.name == target.name }).count == 1 else { return false }
+              threads.filter({ $0.name == target.name }).count == 1 else { return nil }
 
         let application = AXUIElementCreateApplication(processID)
         AXUIElementSetAttributeValue(application, "AXEnhancedUserInterface" as CFString, kCFBooleanTrue)
         var visited = 0
-        return findSelectedTask(named: target.name, in: application, visited: &visited)
+        guard let selectedTask = findSelectedTask(named: target.name, in: application, visited: &visited) else { return nil }
+        return containingWindow(of: selectedTask)
     }
 
-    private func findSelectedTask(named targetName: String, in element: AXUIElement, visited: inout Int) -> Bool {
-        guard visited < 12_000 else { return false }
+    private func findSelectedTask(named targetName: String, in element: AXUIElement, visited: inout Int) -> AXUIElement? {
+        guard visited < 12_000 else { return nil }
         visited += 1
 
         var value: CFTypeRef?
         if AXUIElementCopyAttributeValue(element, kAXValueAttribute as CFString, &value) == .success,
            (value as? String) == targetName,
-           selectedTaskButton(from: element) != nil {
-            return true
+           let selectedTask = selectedTaskButton(from: element) {
+            return selectedTask
         }
 
         var childrenValue: CFTypeRef?
         guard AXUIElementCopyAttributeValue(element, kAXChildrenAttribute as CFString, &childrenValue) == .success,
-              let children = childrenValue as? [AXUIElement] else { return false }
-        return children.contains { findSelectedTask(named: targetName, in: $0, visited: &visited) }
+              let children = childrenValue as? [AXUIElement] else { return nil }
+        for child in children {
+            if let selectedTask = findSelectedTask(named: targetName, in: child, visited: &visited) { return selectedTask }
+        }
+        return nil
+    }
+
+    private func containingWindow(of element: AXUIElement) -> AXUIElement? {
+        var windowValue: CFTypeRef?
+        if AXUIElementCopyAttributeValue(element, kAXWindowAttribute as CFString, &windowValue) == .success,
+           let window = axElement(from: windowValue) {
+            return window
+        }
+
+        var current = element
+        for _ in 0..<16 {
+            var roleValue: CFTypeRef?
+            if AXUIElementCopyAttributeValue(current, kAXRoleAttribute as CFString, &roleValue) == .success,
+               (roleValue as? String) == kAXWindowRole {
+                return current
+            }
+            var parentValue: CFTypeRef?
+            guard AXUIElementCopyAttributeValue(current, kAXParentAttribute as CFString, &parentValue) == .success,
+                  let parent = axElement(from: parentValue) else { return nil }
+            current = parent
+        }
+        return nil
     }
 
     private func selectedTaskButton(from element: AXUIElement) -> AXUIElement? {
@@ -835,6 +958,9 @@ func runSelfTest() -> Int32 {
           isVersion("0.3.0", newerThan: "0.2.9"),
           !isVersion("0.2.0", newerThan: "0.2.0"),
           checksumMatches(data: checksumData, checksumText: "\(checksum)  Codex-Helper.dmg"),
+          isCodexComposerEffectivelyEmpty("\nAsk for follow-up changes"),
+          isCodexComposerEffectivelyEmpty("要求后续变更"),
+          !isCodexComposerEffectivelyEmpty("另外帮我做"),
           !retryPromptEnglish.isEmpty,
           !retryPromptChinese.isEmpty,
           !testPromptEnglish.isEmpty,

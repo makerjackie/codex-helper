@@ -25,6 +25,7 @@
 		A89417938E467E0454851F66 /* MenuBarQuotaCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = A460CF51591D5AFDC68AB3E1 /* MenuBarQuotaCard.swift */; };
 		AAEC6F2242B8FF20C398D0EE /* Agent.swift in Sources */ = {isa = PBXBuildFile; fileRef = CE9E8C27B10C323132510F90 /* Agent.swift */; };
 		BD2E9EF659189296DBAC8AEA /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = F0AFB7C4710F04FC24262B9C /* AppDelegate.swift */; };
+		CDFCD09F0053C6EC8283BAF7 /* AutoRetryActivity.swift in Sources */ = {isa = PBXBuildFile; fileRef = B65AADBB104529ABD2194653 /* AutoRetryActivity.swift */; };
 		CE2A25B1E25078A8CCAD23EE /* MenuBarStatusRow.swift in Sources */ = {isa = PBXBuildFile; fileRef = AD91B112C4E9C126946682BE /* MenuBarStatusRow.swift */; };
 		D5704D21F73B312A65B78743 /* Dashboard.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5CD72B414385AF8942EA8B50 /* Dashboard.swift */; };
 		D61A78269A7469F5A840622E /* MenuBarActionBar.swift in Sources */ = {isa = PBXBuildFile; fileRef = ED3F1A69EBF614C16C9AB976 /* MenuBarActionBar.swift */; };
@@ -74,6 +75,7 @@
 		8401EEF3C4DBE21A5AD03F88 /* AppIcon.icns */ = {isa = PBXFileReference; lastKnownFileType = image.icns; path = AppIcon.icns; sourceTree = "<group>"; };
 		A460CF51591D5AFDC68AB3E1 /* MenuBarQuotaCard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MenuBarQuotaCard.swift; sourceTree = "<group>"; };
 		AD91B112C4E9C126946682BE /* MenuBarStatusRow.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MenuBarStatusRow.swift; sourceTree = "<group>"; };
+		B65AADBB104529ABD2194653 /* AutoRetryActivity.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AutoRetryActivity.swift; sourceTree = "<group>"; };
 		B6B2F593D30B90A7CEB8AE43 /* WidgetSnapshot.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WidgetSnapshot.swift; sourceTree = "<group>"; };
 		BB6460A841DAE81DCC9BA877 /* QuotaVisuals.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QuotaVisuals.swift; sourceTree = "<group>"; };
 		CCE7E2C0CD198F4A7397604A /* Config.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Config.swift; sourceTree = "<group>"; };
@@ -127,6 +129,7 @@
 			children = (
 				CE9E8C27B10C323132510F90 /* Agent.swift */,
 				F0AFB7C4710F04FC24262B9C /* AppDelegate.swift */,
+				B65AADBB104529ABD2194653 /* AutoRetryActivity.swift */,
 				F20A8C0EAF1D15280005E685 /* CodexUpdates.swift */,
 				CCE7E2C0CD198F4A7397604A /* Config.swift */,
 				5CD72B414385AF8942EA8B50 /* Dashboard.swift */,
@@ -247,6 +250,7 @@
 			files = (
 				AAEC6F2242B8FF20C398D0EE /* Agent.swift in Sources */,
 				BD2E9EF659189296DBAC8AEA /* AppDelegate.swift in Sources */,
+				CDFCD09F0053C6EC8283BAF7 /* AutoRetryActivity.swift in Sources */,
 				A53FDBEE1F17E6A3CECBE417 /* CodexUpdates.swift in Sources */,
 				569A8D776E1D496063816162 /* Config.swift in Sources */,
 				D5704D21F73B312A65B78743 /* Dashboard.swift in Sources */,
