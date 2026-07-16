@@ -20,7 +20,7 @@ flowchart LR
 
 ## 错误检测
 
-原生 Swift 助手持续读取 `~/.codex/log/codex-tui.log` 的新增内容，匹配精确的容量错误，并从 `thread_id=...` 提取 UUID。首次启动会从文件末尾开始，因此不会重放历史错误。
+原生 Swift 助手会读取 Codex Desktop 当前 `~/.codex/logs_*.sqlite` 事件数据库中新产生的 `codex_core::session::turn` 记录，匹配精确的容量错误，并使用记录中的任务 UUID。首次启动会从数据库当前的最新位置开始，因此不会重放历史错误；旧版 Codex 使用的 `~/.codex/log/codex-tui.log` 仍作为兼容后备来源。
 
 任务 ID 还必须存在于 `~/.codex/session_index.jsonl`，从而主动排除隐藏的子代理会话。
 
@@ -61,7 +61,7 @@ Codex Helper 会先验证随 App 提供的 `codex` 可执行文件属于 OpenAI 
 - 没有后端服务或遥测；网络请求只会直接访问 OpenAI 官方公开 RSS 和项目 GitHub Releases API。
 - 不读取项目文件。
 - 不保存对话内容。
-- 持久化状态只包含日志游标、任务 ID、时间戳和重试次数。
+- 持久化状态只包含事件游标、任务 ID、时间戳和重试次数。
 - 辅助功能权限只用于向 Codex 进程定向发送重试键盘操作，并且发送前会确认 Codex 位于前台。App 启动、额度刷新与自动化测试都不会主动弹出授权请求；只有用户点击授权入口时才请求。
 - GitHub Release 版本使用 Developer ID 签名、Hardened Runtime、Apple 公证和 stapled ticket；通过 `install.sh` 构建的源码版本使用本机 ad-hoc 签名。
 

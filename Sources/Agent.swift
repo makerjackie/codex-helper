@@ -2,6 +2,7 @@ import AppKit
 import ApplicationServices
 import CryptoKit
 import Foundation
+import SQLite3
 
 let capacityMessage = "Selected model is at capacity. Please try a different model."
 let retryPromptEnglish = "Continue the unfinished task from the failed turn. Do not repeat completed work."
@@ -58,6 +59,8 @@ private struct RetryState: Codable {
 
 private struct PersistedState: Codable {
     var cursor = CursorState(fileID: nil, offset: 0)
+    var databaseFileID: UInt64?
+    var databaseCursor: Int64?
     var retries: [String: RetryState] = [:]
 }
 
@@ -78,6 +81,26 @@ func parseCapacityFailureLine(_ line: String) -> CapacityFailure? {
     let timestampText = String(line.prefix(while: { !$0.isWhitespace }))
     let timestamp = formatter.date(from: timestampText) ?? Date()
     return CapacityFailure(threadID: threadID, timestamp: timestamp)
+}
+
+func parseCapacityFailureRecord(_ body: String, threadID: String?, timestamp: Date) -> CapacityFailure? {
+    guard body.contains("Turn error: \(capacityMessage)") else { return nil }
+
+    if let threadID, threadID.range(of: #"^[0-9a-fA-F-]{36}$"#, options: .regularExpression) != nil {
+        return CapacityFailure(threadID: threadID, timestamp: timestamp)
+    }
+
+    let patterns = [#"thread\.id=[0-9a-fA-F-]{36}"#, #"thread_id=[0-9a-fA-F-]{36}"#]
+    for pattern in patterns {
+        guard let expression = try? NSRegularExpression(pattern: pattern) else { continue }
+        let range = NSRange(body.startIndex..<body.endIndex, in: body)
+        guard let match = expression.matches(in: body, range: range).last,
+              let matchRange = Range(match.range, in: body) else { continue }
+        let token = String(body[matchRange])
+        guard let separator = token.firstIndex(of: "=") else { continue }
+        return CapacityFailure(threadID: String(token[token.index(after: separator)...]), timestamp: timestamp)
+    }
+    return nil
 }
 
 private struct SessionBaseline {
@@ -129,6 +152,7 @@ final class AutoRetryAgent {
     private lazy var logger = AgentLogger(logURL: configStore.supportURL.appendingPathComponent("agent.log"))
     private var state = PersistedState()
     private var partialLine = ""
+    private var lastDatabaseCursorSaveAt = Date.distantPast
     private var pollTimer: Timer?
     private var isRunning = false
 
@@ -235,8 +259,13 @@ final class AutoRetryAgent {
     }
 
     private func poll() {
-        guard isRunning,
-              let attributes = try? fileManager.attributesOfItem(atPath: logURL.path),
+        guard isRunning else { return }
+        pollDatabase()
+        pollLegacyLog()
+    }
+
+    private func pollLegacyLog() {
+        guard let attributes = try? fileManager.attributesOfItem(atPath: logURL.path),
               let sizeNumber = attributes[.size] as? NSNumber else {
             return
         }
@@ -272,6 +301,107 @@ final class AutoRetryAgent {
         }
     }
 
+    private func pollDatabase() {
+        guard let databaseURL = currentLogsDatabase(),
+              let attributes = try? fileManager.attributesOfItem(atPath: databaseURL.path),
+              let fileID = (attributes[.systemFileNumber] as? NSNumber)?.uint64Value,
+              let database = openReadOnlyDatabase(at: databaseURL) else { return }
+        defer { sqlite3_close(database) }
+
+        guard let highWatermark = databaseHighWatermark(database) else { return }
+        if state.databaseFileID == nil {
+            state.databaseFileID = fileID
+            state.databaseCursor = highWatermark
+            lastDatabaseCursorSaveAt = Date()
+            saveState()
+            logger.write("monitoring current Codex event database \(databaseURL.lastPathComponent)")
+            return
+        }
+        if state.databaseFileID != fileID || highWatermark < (state.databaseCursor ?? 0) {
+            state.databaseFileID = fileID
+            state.databaseCursor = 0
+        }
+
+        let cursor = state.databaseCursor ?? highWatermark
+        guard highWatermark > cursor else { return }
+        let failures = databaseCapacityFailures(database, after: cursor, through: highWatermark)
+        state.databaseCursor = highWatermark
+
+        let now = Date()
+        if !failures.isEmpty || now.timeIntervalSince(lastDatabaseCursorSaveAt) >= 60 {
+            lastDatabaseCursorSaveAt = now
+            saveState()
+        }
+        for failure in failures {
+            handle(failure)
+        }
+    }
+
+    private func currentLogsDatabase() -> URL? {
+        guard let urls = try? fileManager.contentsOfDirectory(
+            at: codexHome,
+            includingPropertiesForKeys: nil,
+            options: [.skipsHiddenFiles]
+        ) else { return nil }
+        return urls.compactMap { url -> (URL, Int)? in
+            let name = url.lastPathComponent
+            guard name.hasPrefix("logs_"), name.hasSuffix(".sqlite"),
+                  let version = Int(name.dropFirst(5).dropLast(7)) else { return nil }
+            return (url, version)
+        }.max(by: { $0.1 < $1.1 })?.0
+    }
+
+    private func openReadOnlyDatabase(at url: URL) -> OpaquePointer? {
+        var database: OpaquePointer?
+        let result = sqlite3_open_v2(url.path, &database, SQLITE_OPEN_READONLY | SQLITE_OPEN_FULLMUTEX, nil)
+        guard result == SQLITE_OK, let database else {
+            if let database { sqlite3_close(database) }
+            return nil
+        }
+        sqlite3_busy_timeout(database, 150)
+        return database
+    }
+
+    private func databaseHighWatermark(_ database: OpaquePointer) -> Int64? {
+        var statement: OpaquePointer?
+        guard sqlite3_prepare_v2(database, "SELECT COALESCE(MAX(id), 0) FROM logs", -1, &statement, nil) == SQLITE_OK,
+              let statement else { return nil }
+        defer { sqlite3_finalize(statement) }
+        guard sqlite3_step(statement) == SQLITE_ROW else { return nil }
+        return sqlite3_column_int64(statement, 0)
+    }
+
+    private func databaseCapacityFailures(
+        _ database: OpaquePointer,
+        after cursor: Int64,
+        through highWatermark: Int64
+    ) -> [CapacityFailure] {
+        let sql = """
+        SELECT ts, thread_id, feedback_log_body
+        FROM logs
+        WHERE id > ? AND id <= ? AND target = 'codex_core::session::turn'
+        ORDER BY id ASC
+        """
+        var statement: OpaquePointer?
+        guard sqlite3_prepare_v2(database, sql, -1, &statement, nil) == SQLITE_OK,
+              let statement else { return [] }
+        defer { sqlite3_finalize(statement) }
+        sqlite3_bind_int64(statement, 1, cursor)
+        sqlite3_bind_int64(statement, 2, highWatermark)
+
+        var failures: [CapacityFailure] = []
+        while sqlite3_step(statement) == SQLITE_ROW {
+            guard let bodyPointer = sqlite3_column_text(statement, 2) else { continue }
+            let body = String(cString: bodyPointer)
+            let threadID = sqlite3_column_text(statement, 1).map { String(cString: $0) }
+            let timestamp = Date(timeIntervalSince1970: TimeInterval(sqlite3_column_int64(statement, 0)))
+            if let failure = parseCapacityFailureRecord(body, threadID: threadID, timestamp: timestamp) {
+                failures.append(failure)
+            }
+        }
+        return failures
+    }
+
     private func consume(_ data: Data) {
         guard let text = String(data: data, encoding: .utf8) else { return }
         let combined = partialLine + text
@@ -289,6 +419,12 @@ final class AutoRetryAgent {
     private func handle(_ failure: CapacityFailure) {
         guard isVisibleRootThread(failure.threadID) else {
             logger.write("ignored non-root or hidden thread \(failure.threadID)")
+            return
+        }
+
+        if let existing = state.retries[failure.threadID],
+           abs(failure.timestamp.timeIntervalSince(existing.lastErrorAt)) < 1 {
+            logger.write("ignored duplicate capacity failure for \(failure.threadID)")
             return
         }
 
@@ -595,6 +731,11 @@ final class AutoRetryAgent {
 func runSelfTest() -> Int32 {
     let sample = "2026-07-13T12:00:00.123456Z INFO session_loop{thread_id=019f59b0-c8ec-7cf1-88be-4e6247938d01}: Turn error: \(capacityMessage)"
     let failure = parseCapacityFailureLine(sample)
+    let databaseFailure = parseCapacityFailureRecord(
+        "turn{thread.id=019f6017-6542-7c50-a6b9-b87406def81a}:run_turn: Turn error: \(capacityMessage)",
+        threadID: nil,
+        timestamp: Date(timeIntervalSince1970: 100)
+    )
     let activity = #"{"type":"event_msg","payload":{"type":"user_message"}}"#
     let legacyConfig = #"{"language":"zh"}"#.data(using: .utf8)!
     let decodedConfig = try? JSONDecoder().decode(AgentConfig.self, from: legacyConfig)
@@ -650,6 +791,10 @@ func runSelfTest() -> Int32 {
     let checksumData = Data("codex-helper".utf8)
     let checksum = SHA256.hash(data: checksumData).map { String(format: "%02x", $0) }.joined()
     guard failure?.threadID == "019f59b0-c8ec-7cf1-88be-4e6247938d01",
+          databaseFailure == CapacityFailure(
+              threadID: "019f6017-6542-7c50-a6b9-b87406def81a",
+              timestamp: Date(timeIntervalSince1970: 100)
+          ),
           containsNewTurnActivity(activity),
           decodedConfig == AgentConfig(language: "zh"),
           decodedHiddenQuotaConfig?.showQuotaInMenuBar == false,

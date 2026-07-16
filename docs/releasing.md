@@ -11,7 +11,7 @@ Requirements:
 
 ```bash
 SIGNING_IDENTITY="Developer ID Application: Company Name (TEAMID)" \
-VERSION="0.8.0" \
+VERSION="0.8.1" \
 ./scripts/package-release.sh
 ```
 
@@ -20,9 +20,9 @@ The script verifies the app signature, submits and staples the app, builds and s
 Publish the resulting DMG and checksum:
 
 ```bash
-gh release create v0.8.0 \
-  dist/Codex-Helper-0.8.0.dmg \
-  dist/Codex-Helper-0.8.0.dmg.sha256 \
-  --title "Codex Helper v0.8.0" \
+gh release create v0.8.1 \
+  dist/Codex-Helper-0.8.1.dmg \
+  dist/Codex-Helper-0.8.1.dmg.sha256 \
+  --title "Codex Helper v0.8.1" \
   --generate-notes
 ```
