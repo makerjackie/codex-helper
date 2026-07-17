@@ -388,8 +388,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         let alert = NSAlert()
         alert.messageText = text("Test Auto Retry end to end", "端到端测试自动重试")
         alert.informativeText = text(
-            "Search or choose any task. Codex Helper will open it and submit one clearly marked test message after 3 seconds. This verifies task routing, Accessibility control, text entry, and submission without waiting for a real capacity error.",
-            "搜索或选择任意任务。3 秒后 Codex Helper 会打开它并提交一条明确标记的测试消息，无需等待真实满载错误，即可验证任务定位、辅助功能控制、文字输入和提交。"
+            "Search or choose any task. Codex Helper will open it and submit one clearly marked test message after 3 seconds. If the composer contains a draft, Helper will temporarily preserve it and restore it after submission when possible.",
+            "搜索或选择任意任务。3 秒后 Codex Helper 会打开它并提交一条明确标记的测试消息。如果输入框已有草稿，Helper 会先暂存，并在提交后尽量恢复。"
         )
         alert.accessoryView = taskPicker
         alert.addButton(withTitle: text("Run Test", "运行测试"))
@@ -489,7 +489,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
                 "codexNotFrontmost": ("Codex could not become the frontmost app.", "Codex 无法切换到前台。"),
                 "focusChanged": ("Focus left Codex before submission.", "提交前焦点离开了 Codex。"),
                 "targetNotSelected": ("The selected task could not be verified in the Codex sidebar.", "无法在 Codex 侧边栏确认所选任务。"),
-                "composerNotEmpty": ("The target Codex composer contains a draft, so Helper left it untouched.", "目标 Codex 输入框中已有草稿，Helper 为避免覆盖而没有提交。"),
                 "composerNotFound": ("The target Codex composer could not be found.", "无法定位目标 Codex 输入框。"),
                 "composerWriteFailed": ("The target Codex composer could not be controlled.", "无法控制目标 Codex 输入框。"),
                 "targetNotConfirmed": ("The test prompt was not confirmed in the selected task.", "无法确认测试消息已进入所选任务。")
@@ -771,14 +770,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
                 text(
                     "Retry \(attempt) was sent to the affected Codex task.",
                     "已向发生中断的 Codex 任务发送第 \(attempt) 次续跑消息。"
-                )
-            )
-        case .pausedForDraft:
-            return (
-                text("Retry paused to protect a draft", "已识别，但为保护草稿暂停"),
-                text(
-                    "The target composer already contains text, so Helper did not overwrite it.",
-                    "目标输入框已有文字，Helper 没有覆盖现有草稿。"
                 )
             )
         case .submissionBlocked:

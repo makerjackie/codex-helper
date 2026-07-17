@@ -63,6 +63,10 @@ func isCodexComposerEffectivelyEmpty(_ value: String) -> Bool {
     return normalized.isEmpty || codexComposerPlaceholders.contains(normalized)
 }
 
+func codexComposerDraftToPreserve(_ value: String) -> String? {
+    isCodexComposerEffectivelyEmpty(value) ? nil : value
+}
+
 private struct CursorState: Codable {
     var fileID: UInt64?
     var offset: UInt64
@@ -619,13 +623,9 @@ final class AutoRetryAgent {
                         completion?(false, "targetNotSelected")
                         return
                     }
-                    let preparation = self.preparePrompt(prompt, in: targetWindow, processID: codex.processIdentifier)
-                    guard case let .ready(composer) = preparation else {
+                    let preparation = self.preparePrompt(prompt, in: targetWindow)
+                    guard case let .ready(composer, displacedDraft) = preparation else {
                         switch preparation {
-                        case .notEmpty:
-                            self.logger.write("cancelled \(logDescription) for \(threadID): target composer contains a draft")
-                            if retryAttempt != nil { self.activity = .pausedForDraft }
-                            completion?(false, "composerNotEmpty")
                         case .notFound:
                             self.logger.write("cancelled \(logDescription) for \(threadID): target Codex composer was not found")
                             if retryAttempt != nil { self.activity = .submissionBlocked }
@@ -640,7 +640,11 @@ final class AutoRetryAgent {
                         return
                     }
                     guard !self.hasNewActivity(since: activityBaseline) else {
-                        AXUIElementSetAttributeValue(composer, kAXValueAttribute as CFString, "" as CFString)
+                        AXUIElementSetAttributeValue(
+                            composer,
+                            kAXValueAttribute as CFString,
+                            (displacedDraft ?? "") as CFString
+                        )
                         self.logger.write("cancelled \(logDescription) for \(threadID): newer activity appeared before submission")
                         if retryAttempt != nil { self.activity = .cancelledForNewActivity }
                         completion?(false, "newActivity")
@@ -649,6 +653,15 @@ final class AutoRetryAgent {
                     self.postKey(code: 36, to: codex.processIdentifier)
                     self.logger.write("submitted \(logDescription) for \(threadID)")
                     if let retryAttempt { self.activity = .submitted(attempt: retryAttempt) }
+
+                    if let displacedDraft {
+                        self.restoreDraft(
+                            displacedDraft,
+                            afterReplacing: prompt,
+                            in: targetWindow,
+                            attemptsRemaining: 8
+                        )
+                    }
 
                     DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
                         let confirmed = self.sessionContains(prompt, since: activityBaseline)
@@ -684,40 +697,127 @@ final class AutoRetryAgent {
     }
 
     private enum ComposerPreparation {
-        case ready(AXUIElement)
+        case ready(AXUIElement, displacedDraft: String?)
         case notFound
-        case notEmpty
         case writeFailed
     }
 
-    private func preparePrompt(_ prompt: String, in targetWindow: AXUIElement, processID: pid_t) -> ComposerPreparation {
+    private func preparePrompt(_ prompt: String, in targetWindow: AXUIElement) -> ComposerPreparation {
         var visited = 0
         guard let composer = findComposer(in: targetWindow, visited: &visited) else { return .notFound }
 
         var existingValue: CFTypeRef?
         guard AXUIElementCopyAttributeValue(composer, kAXValueAttribute as CFString, &existingValue) == .success,
               let existing = existingValue as? String else { return .writeFailed }
-        guard isCodexComposerEffectivelyEmpty(existing) else { return .notEmpty }
+        let displacedDraft = codexComposerDraftToPreserve(existing)
 
-        let application = AXUIElementCreateApplication(processID)
         guard AXUIElementSetAttributeValue(composer, kAXFocusedAttribute as CFString, kCFBooleanTrue) == .success,
               AXUIElementSetAttributeValue(composer, kAXValueAttribute as CFString, prompt as CFString) == .success else {
             return .writeFailed
         }
 
-        var focusedValue: CFTypeRef?
         var verificationValue: CFTypeRef?
-        let focusedResult = AXUIElementCopyAttributeValue(application, kAXFocusedUIElementAttribute as CFString, &focusedValue)
         let valueResult = AXUIElementCopyAttributeValue(composer, kAXValueAttribute as CFString, &verificationValue)
-        guard focusedResult == .success,
-              let focused = axElement(from: focusedValue),
-              CFEqual(focused, composer),
-              valueResult == .success,
+        guard valueResult == .success,
               (verificationValue as? String) == prompt else {
-            AXUIElementSetAttributeValue(composer, kAXValueAttribute as CFString, "" as CFString)
+            AXUIElementSetAttributeValue(
+                composer,
+                kAXValueAttribute as CFString,
+                (displacedDraft ?? "") as CFString
+            )
             return .writeFailed
         }
-        return .ready(composer)
+        if displacedDraft != nil {
+            logger.write("temporarily preserved target composer draft before submission")
+        }
+        return .ready(composer, displacedDraft: displacedDraft)
+    }
+
+    private func restoreDraft(
+        _ draft: String,
+        afterReplacing prompt: String,
+        in targetWindow: AXUIElement,
+        attemptsRemaining: Int
+    ) {
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.25) { [weak self] in
+            guard let self else { return }
+            var visited = 0
+            guard let composer = self.findComposer(in: targetWindow, visited: &visited) else {
+                self.retryDraftRestore(
+                    draft,
+                    afterReplacing: prompt,
+                    in: targetWindow,
+                    attemptsRemaining: attemptsRemaining
+                )
+                return
+            }
+
+            var currentValue: CFTypeRef?
+            guard AXUIElementCopyAttributeValue(composer, kAXValueAttribute as CFString, &currentValue) == .success,
+                  let current = currentValue as? String else {
+                self.retryDraftRestore(
+                    draft,
+                    afterReplacing: prompt,
+                    in: targetWindow,
+                    attemptsRemaining: attemptsRemaining
+                )
+                return
+            }
+
+            if current == prompt {
+                self.retryDraftRestore(
+                    draft,
+                    afterReplacing: prompt,
+                    in: targetWindow,
+                    attemptsRemaining: attemptsRemaining
+                )
+                return
+            }
+            guard isCodexComposerEffectivelyEmpty(current) else {
+                self.logger.write("skipped draft restoration because the target composer received newer text")
+                return
+            }
+
+            guard AXUIElementSetAttributeValue(composer, kAXValueAttribute as CFString, draft as CFString) == .success else {
+                self.retryDraftRestore(
+                    draft,
+                    afterReplacing: prompt,
+                    in: targetWindow,
+                    attemptsRemaining: attemptsRemaining
+                )
+                return
+            }
+            var restoredValue: CFTypeRef?
+            guard AXUIElementCopyAttributeValue(composer, kAXValueAttribute as CFString, &restoredValue) == .success,
+                  (restoredValue as? String) == draft else {
+                self.retryDraftRestore(
+                    draft,
+                    afterReplacing: prompt,
+                    in: targetWindow,
+                    attemptsRemaining: attemptsRemaining
+                )
+                return
+            }
+            self.logger.write("restored target composer draft after submission")
+        }
+    }
+
+    private func retryDraftRestore(
+        _ draft: String,
+        afterReplacing prompt: String,
+        in targetWindow: AXUIElement,
+        attemptsRemaining: Int
+    ) {
+        guard attemptsRemaining > 1 else {
+            logger.write("could not restore target composer draft after submission")
+            return
+        }
+        restoreDraft(
+            draft,
+            afterReplacing: prompt,
+            in: targetWindow,
+            attemptsRemaining: attemptsRemaining - 1
+        )
     }
 
     private func findComposer(in element: AXUIElement, visited: inout Int) -> AXUIElement? {
@@ -961,6 +1061,8 @@ func runSelfTest() -> Int32 {
           isCodexComposerEffectivelyEmpty("\nAsk for follow-up changes"),
           isCodexComposerEffectivelyEmpty("要求后续变更"),
           !isCodexComposerEffectivelyEmpty("另外帮我做"),
+          codexComposerDraftToPreserve("\nAsk for follow-up changes") == nil,
+          codexComposerDraftToPreserve("另外帮我做") == "另外帮我做",
           !retryPromptEnglish.isEmpty,
           !retryPromptChinese.isEmpty,
           !testPromptEnglish.isEmpty,
